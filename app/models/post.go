@@ -3,15 +3,11 @@ package models
 import "time"
 
 type Post struct {
-	ID      int       `json:"ID"`
-	UserID int       `json:"UserID"`
-	Title string    `json:"Title"`
-	Content string    `json:"Content"`
-	ImageURL  string    `json:"ImageURL"` //图片地址
-	CreatedAt time.Time `json:"CreatedAt"`
-	UpdatedAt time.Time `json:"UpdatedAt"`
-	Visible   int       `json:"Visible"` // 公开程度0: public, 1: private,2:DELETED
-	Annonymous int       `json:"Anonymous"` // 匿名性0: not anonymous, 1: anonymous
+    ID         uint64     `gorm:"primaryKey;autoIncrement" json:"id"`
+    UserID     uint64     `gorm:"index;not null" json:"user_id"`
+    Content    string     `gorm:"type:text" json:"content"`
+    Anonymous  bool       `gorm:"default:false" json:"anonymous"`
+    Visibility string     `gorm:"type:varchar(32);default:'public'" json:"visibility"` // e.g. "public" / "private"
+    Images     []Image    `gorm:"foreignKey:PostID" json:"images,omitempty"`
+    CreatedAt  time.Time  `gorm:"autoCreateTime" json:"created_at"`
 }
-
-

@@ -1,10 +1,11 @@
 package models
 
-type User struct {
-	ID       int    `json:"userID"`
-	Username string `json:"username"`
-	Password string `json:"password"`
-	Name     string `json:"name"`
-	ImageURL string `json:"imageURL"` //头像地址
-}
+import "time"
 
+type User struct {
+    ID            uint64     `gorm:"primaryKey;autoIncrement" json:"id"`
+    Username      string     `gorm:"type:varchar(100);uniqueIndex;not null" json:"username"`
+    Nickname      string     `gorm:"type:varchar(100)" json:"nickname,omitempty"`
+    AvatarImageID *uint64    `gorm:"index" json:"avatar_image_id,omitempty"` // 可为 NULL
+    CreatedAt     time.Time  `gorm:"autoCreateTime" json:"created_at"`
+}

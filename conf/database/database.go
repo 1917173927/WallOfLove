@@ -37,7 +37,7 @@ func Init() {
 	}
 	err = db.WithContext(context.Background()).
 		Session(&gorm.Session{NewDB: true}).
-		AutoMigrate(&models.User{}, &models.Post{}, &models.Image{})
+		AutoMigrate(&models.User{}, &models.Post{}, &models.Image{}, &models.Blacklist{})
 	if err != nil {
 		_ = tx.Rollback()
 		log.Fatal("自动迁移失败:", err)

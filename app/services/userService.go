@@ -48,7 +48,7 @@ func GetUserDataByID(userID uint64) (*models.User, error) {
 func UpdateProfile(user *models.User, oldVersion uint) error {
 	tx := database.DB.Model(&models.User{}).
 		Where("id = ? AND version = ?", user.ID, oldVersion).
-		Updates(map[string]interface{}{
+		Updates(map[string]any{
 			"nickname":      user.Nickname,
 			"password":      user.Password,
 			"avatar_image_id": user.AvatarImageID,

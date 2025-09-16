@@ -10,5 +10,5 @@ type Post struct {
     Visibility   string     `json:"visibility"` // e.g. "public" / "private"
     Images     []Image      `json:"images,omitempty"`
     CreatedAt    time.Time  `json:"created_at"`
-    UpdateAt     time.Time  `json:"uptade_at"`
+    UpdateAt     time.Time  `json:"update_at"`
 }

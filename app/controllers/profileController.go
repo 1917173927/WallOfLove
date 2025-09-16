@@ -21,7 +21,8 @@ func UpdateProfile(c *gin.Context) {
 	UID:=uid.(uint64)
 
 	var req updateProfileData
-	if err := c.ShouldBindJSON(&req); err != nil {
+	err := c.ShouldBindJSON(&req); 
+	if err != nil {
 		utils.JsonErrorResponse(c, 501, "参数错误")
 		return
 	}

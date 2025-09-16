@@ -4,6 +4,7 @@ import (
 	"github.com/1917173927/WallOfLove/app/models"
 	"github.com/1917173927/WallOfLove/conf/database"
 	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
 )
 
 func CheckUsername(username string) error {
@@ -32,4 +33,29 @@ func HashPassword(password string) (string, error) {
 func CompareHash(password, hash string) error {
 	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
 	return err
+}
+func GetUserDataByID(userID uint64) (*models.User, error) {
+    var user models.User
+    result := database.DB.
+        Where("id = ?", userID).
+        First(&user)
+    if result.Error != nil {
+        return nil,result.Error
+    }
+    return &user, nil
+}
+// services/user.go
+func UpdateProfile(user *models.User, oldVersion uint) error {
+	tx := database.DB.Model(&models.User{}).
+		Where("id = ? AND version = ?", user.ID, oldVersion).
+		Updates(map[string]interface{}{
+			"nickname":      user.Nickname,
+			"password":      user.Password,
+			"avatar_image_id": user.AvatarImageID,
+			"version":       gorm.Expr("version + 1"),
+		})
+	if tx.RowsAffected == 0 { 
+		return gorm.ErrRecordNotFound 
+	}
+	return tx.Error
 }

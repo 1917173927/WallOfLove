@@ -9,4 +9,5 @@ type User struct {
     Nickname       string     `json:"nickname"`
     AvatarImageID *uint64     `json:"avatar_image_id"`
     CreatedAt      time.Time  `json:"created_at"`
+    Version        uint       `grom:"default:1" json:"version"`
 }

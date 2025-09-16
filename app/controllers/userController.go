@@ -14,7 +14,7 @@ import (
 type RegisterData struct {
 	Username      string  `json:"username"        binding:"required"`
 	Name          string  `json:"name"            binding:"required"`
-	Password      string  `json:"password"        binding:"required"`
+	Password      string  `json:"password"        binding:"required,pwdmin"`
 	AvatarImageID *uint64 `json:"avatar_image_id"`
 }
 

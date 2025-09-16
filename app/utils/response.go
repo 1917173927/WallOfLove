@@ -26,7 +26,7 @@ func JsonResponse(c *gin.Context, httpStatusCode int, code int, msg string, data
 	})
 }
 
-func JsonSuccessResponse(c *gin.Context, data interface{}) {
+func JsonSuccessResponse(c *gin.Context, data any) {
 	JsonResponse(c, http.StatusOK, 200, "OK", data)
 }
 

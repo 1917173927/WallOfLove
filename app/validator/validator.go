@@ -5,11 +5,14 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
-func init() {
-	v, ok := binding.Validator.Engine().(*validator.Validate);
-	if ok {
-		_ = v.RegisterValidation("pwdmin", pwdminFunc)
-	}
+var (
+	Validate *validator.Validate
+)
+func Init() {
+v, ok := binding.Validator.Engine().(*validator.Validate);
+if ok {
+   _= v.RegisterValidation("pwdmin", pwdminFunc)
+}
 }
 
 func pwdminFunc(fl validator.FieldLevel) bool {

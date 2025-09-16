@@ -105,4 +105,4 @@ func FilterBlack(c *gin.Context,db *gorm.DB, userID uint64) *gorm.DB {
 	}
 	return db.Where("user_id NOT IN ?", all)
 }
-	//在获取时使用黑名单过滤加入：filter:=service.FilterBlack(database.DB,UID)  后面用filter.Find(&posts)或者其他即可
+	//在获取时使用黑名单过滤加入：filter:=services.FilterBlack(database.DB,UID)  后面用filter.Find(&posts)或者其他即可

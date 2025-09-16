@@ -21,12 +21,12 @@ func BlackUser(c *gin.Context) {
 		return
 	}
 	if UID==req.BlockedID {
-		utils.JsonErrorResponse(c, 200511, "不能拉黑自己")
+		utils.JsonErrorResponse(c, 511, "不能拉黑自己")
 		return
 	}
 	err = services.BlackUser(database.DB, UID, req.BlockedID)
 	if err != nil {
-		utils.JsonErrorResponse(c, 200512, "拉黑失败")
+		utils.JsonErrorResponse(c, 512, "拉黑失败")
 		return
 	}
 	utils.JsonSuccessResponse(c, nil)
@@ -44,7 +44,7 @@ func UnblackUser(c *gin.Context) {
 	}
 	err = services.UnblackUser(database.DB, UID, req.BlockedID)
 	if  err != nil {
-		utils.JsonErrorResponse(c, 200513, "取消拉黑失败")
+		utils.JsonErrorResponse(c, 513, "取消拉黑失败")
 		return
 	}
 	utils.JsonSuccessResponse(c, nil)

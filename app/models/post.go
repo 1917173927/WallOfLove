@@ -7,8 +7,8 @@ type Post struct {
     UserID       uint64     `json:"user_id"`
     Content      string     `json:"content"`
     Anonymous    bool       `json:"anonymous"`
-    Visibility   string     `json:"visibility"` // e.g. "public" / "private"
-    Images     []Image      `json:"images,omitempty"`
+    Visibility   string     `json:"visibility"` // e.g. "public" / "private / deleted"
+    Images       []Image    `json:"images,omitempty"`
     CreatedAt    time.Time  `json:"created_at"`
-    UpdateAt     time.Time  `json:"uptade_at"`
+    UpdatedAt    time.Time  `json:"updated_at"`
 }

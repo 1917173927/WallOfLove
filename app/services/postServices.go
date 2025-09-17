@@ -13,7 +13,7 @@ func (s *PostService) CreatePost(post *models.Post) error {
 }
 
 func (s *PostService) UpdatePost(post *models.Post) error {
-	return database.DB.Save(post).Error
+	return database.DB.Model(post).Updates(post).Error
 }
 
 func (s *PostService) DeletePost(postID string) error {

@@ -53,8 +53,12 @@ func UpdatePost(c *gin.Context) {
 		return
 	}
 
-	if req.ID == 0 || req.UserID == 0 {
-		utils.JsonErrorResponse(c, 400, errInvalidPostData.Error())
+	if req.ID == 0 {
+		utils.JsonErrorResponse(c, 400, "帖子ID不能为空")
+		return
+	}
+	if req.UserID == 0 {
+		utils.JsonErrorResponse(c, 400, "用户ID不能为空")
 		return
 	}
 

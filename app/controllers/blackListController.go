@@ -3,7 +3,6 @@ package controllers
 import (
 	"github.com/1917173927/WallOfLove/app/services"
 	"github.com/1917173927/WallOfLove/app/utils"
-	"github.com/1917173927/WallOfLove/conf/database"
 	"github.com/gin-gonic/gin"
 )
 
@@ -24,7 +23,7 @@ func BlackUser(c *gin.Context) {
 		utils.JsonErrorResponse(c, 511, "不能拉黑自己")
 		return
 	}
-	err = services.BlackUser(database.DB, UID, req.BlockedID)
+	err = services.BlackUser(UID, req.BlockedID)
 	if err != nil {
 		utils.JsonErrorResponse(c, 512, "拉黑失败")
 		return
@@ -42,10 +41,22 @@ func UnblackUser(c *gin.Context) {
 		utils.JsonErrorResponse(c, 501, "参数错误")
 		return
 	}
-	err = services.UnblackUser(database.DB, UID, req.BlockedID)
+	err = services.UnblackUser(UID, req.BlockedID)
 	if  err != nil {
 		utils.JsonErrorResponse(c, 513, "取消拉黑失败")
 		return
 	}
 	utils.JsonSuccessResponse(c, nil)
+}
+
+//获取拉黑列表
+func GetBlackList(c *gin.Context) {
+	uid,_:=c.Get("userID")
+	UID:=uid.(uint64)
+	blackList,err:=services.GetBlackListID(UID)
+	if err!=nil {
+		utils.JsonErrorResponse(c, 514, "获取拉黑列表失败")
+		return
+	}
+	utils.JsonSuccessResponse(c, blackList)
 }

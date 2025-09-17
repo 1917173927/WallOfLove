@@ -2,11 +2,11 @@ package controllers
 
 import (
 	"errors"
+	"log"
 
 	"github.com/1917173927/WallOfLove/app/models"
 	"github.com/1917173927/WallOfLove/app/services"
 	"github.com/1917173927/WallOfLove/app/utils"
-	"github.com/1917173927/WallOfLove/conf/database"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
@@ -14,7 +14,6 @@ import (
 var (
 	postService = &services.PostService{}
 	errPostNotFound = errors.New("帖子不存在")
-	errInvalidPostData = errors.New("无效的帖子数据")//错误统一处理还没做
 	errUpdateFailed = errors.New("更新帖子失败")
 )
 
@@ -33,11 +32,6 @@ func CreatePost(c *gin.Context) {
 		utils.JsonErrorResponse(c, 400, "帖子内容不能为空")
 		return
 	}
-	if req.Visibility != "public" && req.Visibility != "private" {
-		utils.JsonErrorResponse(c, 400, "visibility 必须是 'public' 或 'private'")
-		return
-	}
-
 	if err := postService.CreatePost(&req); err != nil {
 		utils.JsonErrorResponse(c, 500, "创建帖子失败")
 		return
@@ -97,13 +91,11 @@ func DeletePost(c *gin.Context) {
 func GetVisiblePosts(c *gin.Context) {
 	uid, _ := c.Get("userID")
 	UID := uid.(uint64)
-	var posts []models.Post
-	filter := services.FilterBlack(c, database.DB, UID)
-	err := filter.Find(&posts)
+	posts,total,err := services.GetVisiblePosts(UID,10,10)
 	if err != nil {
-		utils.JsonErrorResponse(c, 500, "获取表白失败")
+		utils.JsonErrorResponse(c, 500, "获取帖子失败")
 		return
 	}
-
+	log.Println(total)
 	utils.JsonSuccessResponse(c, posts)
 }

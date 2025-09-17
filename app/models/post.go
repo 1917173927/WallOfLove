@@ -9,8 +9,9 @@ type Post struct {
     Anonymous    bool       `json:"anonymous"`
     Visibility   bool       `json:"visibility"`
     UserNickname string     `json:"user_nickname"`
-    AvatarImageID *uint64     `json:"avatar_image_id"`
+    AvatarImageID *uint64   `json:"avatar_image_id"`
     CreatedAt    time.Time  `json:"created_at"`
     UpdatedAt    time.Time  `json:"updated_at"`
     Version      uint       `grom:"default:1" json:"version"`
+    Images     []Image      `json:"images,omitempty" gorm:"foreignKey:PostID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
 }

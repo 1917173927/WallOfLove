@@ -17,7 +17,6 @@ func Init(r *gin.Engine) {
 	r.POST(pre+"/review", middleware.JWT(), controllers.CreateReview)
 	r.GET(pre+"/review/:id", middleware.JWT(), controllers.GetReviewsByPostID)
 	r.POST(pre+"/review2", middleware.JWT(), controllers.CreateReview2)
-	r.GET(pre+"/review2/:id", middleware.JWT(), controllers.GetReviews2ByPostID)
 	r.GET(pre+"/post/:id", middleware.JWT(), controllers.GetVisiblePosts)
 	r.DELETE(pre+"/post/:id", middleware.JWT(), controllers.DeletePost)
 	r.POST(pre+"/blacklist", middleware.JWT(), controllers.BlackUser)

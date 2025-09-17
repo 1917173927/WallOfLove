@@ -65,10 +65,6 @@ func GetReviewsByPostID(c *gin.Context) {
 	UID := uid.(uint64)
 	err := c.ShouldBindJSON(&req)
 	if err != nil {
-        utils.JsonErrorResponse(c, 404, "未找到该评论")
-        return
-    }
-	if err != nil {
 		utils.JsonErrorResponse(c, 501, "参数错误")
 		return
 	}

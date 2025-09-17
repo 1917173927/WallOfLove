@@ -1,19 +1,9 @@
-# 默认配置文件
 mysql:
   host: "localhost"
   port: 3306
   user: "root"
   password: "coppklmja!BWZ"
-  DBname: "walloflove"
+  dbname: "walloflove"
 
-# server:
-#   port: 8080
-#   mode: "debug"
-
-# logging:
-#   level: "info"
-#   path: "./logs"
-
-# jwt:
-#   secret: "your_jwt_secret"
-#   expires: 3600
+image:
+  max_size: 2097152  # 2MB

@@ -9,6 +9,7 @@ import (
 
 
 func Init(r *gin.Engine) {
+	r.MaxMultipartMemory = 64 << 20 // 64MB
 	const pre = "/api"
 	r.POST(pre+"/register", controllers.Register)
 	r.POST(pre+"/login", controllers.Login)
@@ -18,4 +19,5 @@ func Init(r *gin.Engine) {
 	r.DELETE(pre+"/post/:id", middleware.JWT(), controllers.DeletePost)
 	r.POST(pre+"/blacklist", middleware.JWT(), controllers.BlackUser)
 	r.DELETE(pre+"/blacklist", middleware.JWT(), controllers.UnblackUser)
+	r.POST(pre+"/uploadimage", middleware.JWT(), controllers.UploadImage)
 }

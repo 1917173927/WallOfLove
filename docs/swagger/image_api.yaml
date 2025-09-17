@@ -1,0 +1,72 @@
+swagger: "2.0"
+info:
+  title: WallOfLove Image API
+  description: API for uploading images in WallOfLove
+  version: 1.0.0
+
+paths:
+  /upload/image:
+    post:
+      summary: Upload an image
+      description: Upload an image to the server and associate it with a user or post.
+      consumes:
+        - multipart/form-data
+      produces:
+        - application/json
+      parameters:
+        - name: user_id
+          in: formData
+          description: ID of the user uploading the image
+          required: true
+          type: string
+        - name: post_id
+          in: formData
+          description: ID of the post the image belongs to (optional)
+          required: false
+          type: string
+        - name: is_avatar
+          in: formData
+          description: Whether the image is an avatar (optional)
+          required: false
+          type: string
+        - name: file
+          in: formData
+          description: The image file to upload
+          required: true
+          type: file
+      responses:
+        200:
+          description: Successfully uploaded the image
+          schema:
+            $ref: '#/definitions/ImageResponse'
+        400:
+          description: Bad request (e.g., missing required fields or invalid data)
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        500:
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+
+definitions:
+  ImageResponse:
+    type: object
+    properties:
+      user_id:
+        type: integer
+        format: uint64
+      file_path:
+        type: string
+      size:
+        type: integer
+        format: int64
+      created_at:
+        type: string
+        format: date-time
+  ErrorResponse:
+    type: object
+    properties:
+      code:
+        type: integer
+      message:
+        type: string

@@ -25,8 +25,16 @@ func CreatePost(c *gin.Context) {
 		return
 	}
 
-	if req.UserID == 0 || req.Content == "" {
-		utils.JsonErrorResponse(c, 400, errInvalidPostData.Error())
+	if req.UserID == 0 {
+		utils.JsonErrorResponse(c, 400, "用户ID不能为空")
+		return
+	}
+	if req.Content == "" {
+		utils.JsonErrorResponse(c, 400, "帖子内容不能为空")
+		return
+	}
+	if req.Visibility != "public" && req.Visibility != "private" {
+		utils.JsonErrorResponse(c, 400, "visibility 必须是 'public' 或 'private'")
 		return
 	}
 

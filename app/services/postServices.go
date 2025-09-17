@@ -7,6 +7,7 @@ import (
 
 type PostService struct{}
 
+// CreatePost 创建帖子，可以独立发布（无需关联图片）
 func (s *PostService) CreatePost(post *models.Post) error {
 	return database.DB.Create(post).Error
 }

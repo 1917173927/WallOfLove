@@ -20,21 +20,14 @@ type ReviewData struct {
 func CreateReview(c *gin.Context) {
 	var req ReviewData
 	uid, _ := c.Get("userID")
-	UID, ok := uid.(uint64)
-	if !ok {
-		utils.JsonErrorResponse(c, 400, "无效的用户ID类型")
-		return
-	}
+	UID := uid.(uint64)
 	if err := c.ShouldBindJSON(&req); err != nil {
 		utils.JsonErrorResponse(c, 400, "参数错误")
 		return
 	}
-	if UID == 0 {
-		utils.JsonErrorResponse(c, 400, "用户ID不能为空")
-		return
-	}
-	if req.PostID == 0 {
-		utils.JsonErrorResponse(c, 400, "帖子ID不能为空")
+	exists := services.GetReviewsByPostID(req.PostID)
+	if exists != nil {
+		utils.JsonErrorResponse(c, 400, "无效的帖子ID")
 		return
 	}
 	if req.Content == "" {
@@ -73,13 +66,9 @@ func GetReviewsByPostID(c *gin.Context) {
 		utils.JsonErrorResponse(c, 400, "无效的帖子ID")
 		return
 	}
-	if req.PostID == 0 {
-		utils.JsonErrorResponse(c, 400, "帖子ID不能为空")
-		return
-	}
 	reviews, total, err := services.GetVisibleReviews(UID, req.Page, req.PageSize)
 	if err != nil {
-		utils.JsonErrorResponse(c, 500, "获取帖子失败")
+		utils.JsonErrorResponse(c, 500, "获取评论失败")
 		return
 	}
 	data := map[string]any{

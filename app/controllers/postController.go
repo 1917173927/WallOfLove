@@ -162,6 +162,13 @@ func GetVisiblePosts(c *gin.Context) {
 		utils.JsonErrorResponse(c, 500, "获取帖子失败")
 		return
 	}
+	for i := range posts {
+		if posts [i].Anonymous {
+			posts[i].UserID = 0
+			posts[i].UserNickname = "?"         
+			posts[i].AvatarImageID = nil      
+		}
+	}
 	data:=map[string]any{
 		"posts": posts,
 		"total": total,

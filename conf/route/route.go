@@ -16,6 +16,8 @@ func Init(r *gin.Engine) {
 	r.PUT(pre+"/user", middleware.JWT(), controllers.UpdateProfile)
 	r.POST(pre+"/post", middleware.JWT(), controllers.CreatePost)
 	r.PUT(pre+"/post", middleware.JWT(), controllers.UpdatePost)
+	r.POST(pre+"/review", middleware.JWT(), controllers.CreateReview)
+	r.GET(pre+"/review/:id", middleware.JWT(), controllers.GetReviewsByPostID)
 	r.GET(pre+"/post/:id", middleware.JWT(), controllers.GetVisiblePosts)
 	r.DELETE(pre+"/post/:id", middleware.JWT(), controllers.DeletePost)
 	r.POST(pre+"/blacklist", middleware.JWT(), controllers.BlackUser)

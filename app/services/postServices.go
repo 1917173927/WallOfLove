@@ -2,6 +2,7 @@ package services
 
 import (
 	"github.com/1917173927/WallOfLove/app/models"
+	"github.com/1917173927/WallOfLove/app/utils"
 	"github.com/1917173927/WallOfLove/conf/database"
 )
 
@@ -20,11 +21,24 @@ func DeletePost(postID string) error {
 }
 
 // GetVisiblePosts 获取未被拉黑的其他人发布的表白
-func GetVisiblePosts(userID uint64) ([]models.Post, error) {
-	var posts []models.Post
-	err := database.DB.Where("user_id != ? AND id NOT IN (SELECT blocked_id FROM blacklists WHERE user_id = ?)", userID, userID).Find(&posts).Error
-	if err != nil {
-		return nil, err
-	}
-	return posts, nil
+func GetVisiblePosts(userID uint64, page, pageSize int) ([]models.Post, int64, error) {
+	sub := database.DB.Model(&models.Blacklist{}).
+		Where("user_id = ?", userID).
+		Select("blocked_id")
+
+	var total int64
+	database.DB.Model(&models.Post{}).
+		Where("visibility = ?", true).
+		Where("user_id NOT IN (?)", sub).
+		Count(&total)
+
+	var list []models.Post
+	err := database.DB.Preload("Images").
+		Where("visibility = ?", true).
+		Where("user_id NOT IN (?)", sub).
+		Order("created_at desc").
+		Scopes(utils.Paginate(page, pageSize)).
+		Find(&list).Error
+
+	return list, total, err
 }

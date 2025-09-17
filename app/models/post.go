@@ -10,4 +10,5 @@ type Post struct {
     Visibility   bool       `json:"visibility"`
     CreatedAt    time.Time  `json:"created_at"`
     UpdatedAt    time.Time  `json:"updated_at"`
+    Version        uint       `grom:"default:1" json:"version"`
 }

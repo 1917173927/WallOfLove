@@ -10,11 +10,11 @@ import (
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
-
+// 创建帖子
 type PostData struct{
 	Content    string `json:"content" binding:"required"`
 	Anonymous  bool   `json:"anonymous"`
-	Visibility bool `json:"visibility" binding:"required,oneof=public private"`
+	Visibility bool   `json:"visibility"`
 }
 
 func CreatePost(c *gin.Context) {
@@ -32,7 +32,7 @@ func CreatePost(c *gin.Context) {
 	}
 	
 	if req.Content == "" {
-		utils.JsonErrorResponse(c, 400, "帖子内容不能为空")
+		utils.JsonErrorResponse(c, 400, "表白内容不能为空")
 		return
 	}
 	if err := services.CreatePost(&models.Post{
@@ -48,51 +48,98 @@ func CreatePost(c *gin.Context) {
 	utils.JsonSuccessResponse(c, req)
 }
 
+// 更新帖子
+type UpdatePostData struct {
+	ID         uint64  `json:"id" binding:"required"`
+	Content    string  `json:"content"`
+	Anonymous  *bool   `json:"anonymous"`
+	Visibility *bool   `json:"visibility"`
+}
 func UpdatePost(c *gin.Context) {
-	var req models.Post
-	if err := c.ShouldBindJSON(&req); err != nil {
-		utils.JsonErrorResponse(c, 400, "参数错误")
+	uid, _ := c.Get("userID")
+	UID := uid.(uint64)
+	var req UpdatePostData
+	err := c.ShouldBindJSON(&req); 
+	if err != nil {
+		utils.JsonErrorResponse(c, 501, "参数错误")
 		return
+	}
+    
+	post, err := services.GetPostDataByID(req.ID)
+	if err != nil {
+		c.Error(errors.New("表白不存在"))
+		return
+	}
+    if UID!=post.UserID {
+		utils.JsonErrorResponse(c, 512, "无权限")
+		return
+	}
+	if req.Content == "" {
+		req.Content=post.Content
+	}
+    var anonymous bool
+    var visibility bool
+	if req.Anonymous == nil {
+		anonymous = post.Anonymous
+	}else{
+		anonymous = *req.Anonymous
+	}
+	
+	if req.Visibility == nil {
+		visibility = post.Visibility
+	}else{
+		visibility = *req.Visibility
 	}
 
-	if req.ID == 0 {
-		utils.JsonErrorResponse(c, 400, "帖子ID不能为空")
-		return
-	}
-	if req.UserID == 0 {
-		utils.JsonErrorResponse(c, 400, "用户ID不能为空")
-		return
+	updatedPost := models.Post{
+		ID:            req.ID,
+		UserID:        UID,
+		Content:       req.Content,
+		Anonymous:     anonymous,
+		Visibility:    visibility,	
+		Version:       post.Version,
 	}
 
-	if err := services.UpdatePost(&req); err != nil {
+	err = services.UpdatePost(&updatedPost, post.Version)
+	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			utils.JsonErrorResponse(c, 404, "帖子不存在")
+			c.Error(errors.New("数据已被其他会话修改，请重试"))
 		} else {
-			utils.JsonErrorResponse(c, 500, "更新帖子失败")
+			c.Error(errors.New("更新表白信息失败"))
 		}
 		return
 	}
 
-	utils.JsonSuccessResponse(c, req)
+	c.JSON(200, map[string]any{"version": post.Version+1})
 }
 
+type DeletePostData struct {
+	ID         uint64  `json:"post_id" binding:"required"`
+}
 func DeletePost(c *gin.Context) {
-	postID := c.Param("id")
-	if postID == "" {
-		utils.JsonErrorResponse(c, 400, "无效的帖子ID")
+	uid, _ := c.Get("userID")
+	UID := uid.(uint64)
+	var req DeletePostData
+	err := c.ShouldBindJSON(&req)
+	if err != nil {
+		utils.JsonErrorResponse(c,501, "参数错误")
 		return
 	}
-
-	if err := services.DeletePost(postID); err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			utils.JsonErrorResponse(c, 404, "帖子不存在")
-		} else {
-			utils.JsonErrorResponse(c, 500, "删除帖子失败")
-		}
+	originalPost, err := services.GetPostDataByID(req.ID)
+	if err != nil {
+		utils.JsonErrorResponse(c, 508, "表白不存在")
 		return
 	}
-
-	utils.JsonSuccessResponse(c, gin.H{"message": "删除成功"})
+	if originalPost.UserID != UID {
+		utils.JsonErrorResponse(c, 512, "无权限")
+		return
+	}
+	err = services.DeletePost(req.ID)
+	if err != nil {
+		utils.JsonErrorResponse(c, 511, "删除帖子失败")
+		return
+	}
+	utils.JsonSuccessResponse(c, nil)
 }
 
 // GetVisiblePosts 获取未被拉黑的其他人发布的表白

@@ -12,7 +12,8 @@ import (
 
 type updateProfileData struct {
 	Nickname        string       `json:"nickname"`
-	OriginalPassword string       `json:"original_password" binding:"required"`
+	Username        string       `json:"username"`
+	OriginalPassword string      `json:"original_password"`
 	Password        string       `json:"password" binding:"pwdmin"`
 	AvatarID       *uint64       `json:"avatar_id"`
 }
@@ -37,7 +38,9 @@ func UpdateProfile(c *gin.Context) {
 	if req.Nickname == "" {
 		req.Nickname = user.Nickname
 	}
-
+	if req.Username == "" {
+		req.Username = user.Username
+	}
 	if req.Password != "" {
 		if err := services.CompareHash(req.OriginalPassword, user.Password); err != nil {
 			c.Error(errors.New("密码错误"))
@@ -60,6 +63,7 @@ func UpdateProfile(c *gin.Context) {
 	updatedUser := models.User{
 		ID:            UID,
 		Nickname:      req.Nickname,
+		Username:      req.Username,
 		Password:      req.Password,
 		AvatarImageID: req.AvatarID,
 		Version:       user.Version,
@@ -75,5 +79,5 @@ func UpdateProfile(c *gin.Context) {
 		return
 	}
 
-	c.JSON(200, map[string]any{"version": updatedUser.Version})
+	c.JSON(200, map[string]any{"version": user.Version+1})
 }

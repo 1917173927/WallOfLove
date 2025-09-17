@@ -44,12 +44,12 @@ func GetUserDataByID(userID uint64) (*models.User, error) {
 	}
 	return &user, nil
 }
-
 func UpdateProfile(user *models.User, oldVersion uint) error {
 	tx := database.DB.Model(&models.User{}).
 		Where("id = ? AND version = ?", user.ID, oldVersion).
 		Updates(map[string]any{
 			"nickname":        user.Nickname,
+			"username":        user.Username,
 			"password":        user.Password,
 			"avatar_image_id": user.AvatarImageID,
 			"version":         gorm.Expr("version + 1"),

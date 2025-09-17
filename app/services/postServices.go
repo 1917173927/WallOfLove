@@ -6,18 +6,17 @@ import (
 	"github.com/1917173927/WallOfLove/conf/database"
 )
 
-type PostService struct{}
 
 // CreatePost 创建帖子，可以独立发布（无需关联图片）
-func (s *PostService) CreatePost(post *models.Post) error {
+func CreatePost(post *models.Post) error {
 	return database.DB.Create(post).Error
 }
 
-func (s *PostService) UpdatePost(post *models.Post) error {
+func UpdatePost(post *models.Post) error {
 	return database.DB.Model(post).Updates(post).Error
 }
 
-func (s *PostService) DeletePost(postID string) error {
+func DeletePost(postID string) error {
 	return database.DB.Delete(&models.Post{}, "id = ?", postID).Error
 }
 

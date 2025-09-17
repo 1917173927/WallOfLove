@@ -11,28 +11,36 @@ import (
 	"gorm.io/gorm"
 )
 
-var (
-	postService = &services.PostService{}
-	errPostNotFound = errors.New("帖子不存在")
-	errUpdateFailed = errors.New("更新帖子失败")
-)
+type PostData struct{
+	Content    string `json:"content" binding:"required"`
+	Anonymous  bool   `json:"anonymous"`
+	Visibility bool `json:"visibility" binding:"required,oneof=public private"`
+}
 
 func CreatePost(c *gin.Context) {
-	var req models.Post
+	var req PostData
+	uid, _ := c.Get("userID")
+	UID := uid.(uint64)   //jwt
 	if err := c.ShouldBindJSON(&req); err != nil {
 		utils.JsonErrorResponse(c, 400, "参数错误")
 		return
 	}
 
-	if req.UserID == 0 {
+	if UID == 0 {
 		utils.JsonErrorResponse(c, 400, "用户ID不能为空")
 		return
 	}
+	
 	if req.Content == "" {
 		utils.JsonErrorResponse(c, 400, "帖子内容不能为空")
 		return
 	}
-	if err := postService.CreatePost(&req); err != nil {
+	if err := services.CreatePost(&models.Post{
+		UserID:    UID,
+		Content:   req.Content,
+		Anonymous: req.Anonymous,
+		Visibility: req.Visibility,
+	}); err != nil {
 		utils.JsonErrorResponse(c, 500, "创建帖子失败")
 		return
 	}
@@ -56,11 +64,11 @@ func UpdatePost(c *gin.Context) {
 		return
 	}
 
-	if err := postService.UpdatePost(&req); err != nil {
+	if err := services.UpdatePost(&req); err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			utils.JsonErrorResponse(c, 404, errPostNotFound.Error())
+			utils.JsonErrorResponse(c, 404, "帖子不存在")
 		} else {
-			utils.JsonErrorResponse(c, 500, errUpdateFailed.Error())
+			utils.JsonErrorResponse(c, 500, "更新帖子失败")
 		}
 		return
 	}
@@ -75,9 +83,9 @@ func DeletePost(c *gin.Context) {
 		return
 	}
 
-	if err := postService.DeletePost(postID); err != nil {
+	if err := services.DeletePost(postID); err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			utils.JsonErrorResponse(c, 404, errPostNotFound.Error())
+			utils.JsonErrorResponse(c, 404, "帖子不存在")
 		} else {
 			utils.JsonErrorResponse(c, 500, "删除帖子失败")
 		}

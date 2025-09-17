@@ -11,11 +11,11 @@ import (
 )
 
 type updateProfileData struct {
-	Nickname        string       `json:"nickname"`
-	Username        string       `json:"username"`
-	OriginalPassword string      `json:"original_password"`
-	Password        string       `json:"password" binding:"pwdmin"`
-	AvatarID       *uint64       `json:"avatar_id"`
+	Nickname         string  `json:"nickname"`
+	Username         string  `json:"username"`
+	OriginalPassword string  `json:"original_password"`
+	Password         string  `json:"password" binding:"pwdmin"`
+	AvatarID         *uint64 `json:"avatar_id"`
 }
 
 func UpdateProfile(c *gin.Context) {
@@ -23,7 +23,7 @@ func UpdateProfile(c *gin.Context) {
 	UID := uid.(uint64)
 
 	var req updateProfileData
-	err := c.ShouldBindJSON(&req); 
+	err := c.ShouldBindJSON(&req)
 	if err != nil {
 		utils.JsonErrorResponse(c, 501, "参数错误")
 		return
@@ -79,5 +79,5 @@ func UpdateProfile(c *gin.Context) {
 		return
 	}
 
-	c.JSON(200, map[string]any{"version": user.Version+1})
+	c.JSON(200, map[string]any{"version": user.Version + 1})
 }

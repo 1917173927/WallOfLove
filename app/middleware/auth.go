@@ -45,15 +45,15 @@ func JWT() gin.HandlerFunc {
 			return jwtSecret, nil
 		})
 		if err != nil || !token.Valid {
-	   //先区分是不是过期
-	      if errors.Is(err, jwt.ErrTokenExpired) {
-		      utils.JsonErrorResponse(c,402, "token已过期")
-	      } else {
-		      utils.JsonErrorResponse(c,401, "token无效")
-	      }
-	        c.Abort()
-	        return
-}
+			//先区分是不是过期
+			if errors.Is(err, jwt.ErrTokenExpired) {
+				utils.JsonErrorResponse(c, 402, "token已过期")
+			} else {
+				utils.JsonErrorResponse(c, 401, "token无效")
+			}
+			c.Abort()
+			return
+		}
 
 		// 取出 userID 写进上下文
 		if claims, ok := token.Claims.(jwt.MapClaims); ok {
@@ -67,7 +67,7 @@ func JWT() gin.HandlerFunc {
 	}
 }
 
-//访问不存在地址时404
+// 访问不存在地址时404
 func HandleNotFound(c *gin.Context) {
 	utils.JsonResponse(c, 404, 200404, http.StatusText(http.StatusNotFound), nil)
 }

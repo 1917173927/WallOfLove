@@ -60,7 +60,7 @@ func UpdateProfile(user *models.User, oldVersion uint) error {
 	return tx.Error
 }
 
-func BlackUser( userID, blockedID uint64) error {
+func BlackUser(userID, blockedID uint64) error {
 	return database.DB.Create(&models.Blacklist{UserID: userID, BlockedID: blockedID}).Error
 }
 func UnblackUser(userID, blockedID uint64) error {

@@ -25,10 +25,10 @@ func UpdatePost(post *models.Post, oldVersion uint) error {
 	tx := database.DB.Model(&models.Post{}).
 		Where("id = ? AND version = ?", post.ID, oldVersion).
 		Updates(map[string]any{
-			"content":         post.Content,
-			"anonymous":       post.Anonymous,
-			"visibility":      post.Visibility,
-			"version":         gorm.Expr("version + 1"),
+			"content":    post.Content,
+			"anonymous":  post.Anonymous,
+			"visibility": post.Visibility,
+			"version":    gorm.Expr("version + 1"),
 		})
 	if tx.RowsAffected == 0 {
 		return gorm.ErrRecordNotFound

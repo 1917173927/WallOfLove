@@ -1,24 +1,29 @@
 package controllers
 
 import (
-
+	"log"
 	"time"
+
 	"github.com/1917173927/WallOfLove/app/models"
 	"github.com/1917173927/WallOfLove/app/services"
 	"github.com/1917173927/WallOfLove/app/utils"
 	"github.com/gin-gonic/gin"
 )
 
-type ReviewData struct {
+type Review2Data struct {
 	UserID    uint64      `json:"user_id"`
-	PostID    uint64      `json:"post_id"`
+	ReviewID  uint64      `json:"review_id"`
 	Content   string    `json:"content"`
 	CreatedAt time.Time `json:"created_at"`
 }
 
-func CreateReview(c *gin.Context) {
-	var req ReviewData
-	uid, _ := c.Get("userID")
+func CreateReview2(c *gin.Context) {
+	var req Review2Data
+	uid, exists := c.Get("userID")
+	if !exists {
+		utils.JsonErrorResponse(c, 400, "用户ID未提供")
+		return
+	}
 	UID, ok := uid.(uint64)
 	if !ok {
 		utils.JsonErrorResponse(c, 400, "无效的用户ID类型")
@@ -32,8 +37,8 @@ func CreateReview(c *gin.Context) {
 		utils.JsonErrorResponse(c, 400, "用户ID不能为空")
 		return
 	}
-	if req.PostID == 0 {
-		utils.JsonErrorResponse(c, 400, "帖子ID不能为空")
+	if req.ReviewID == 0 {
+		utils.JsonErrorResponse(c, 400, "评论ID不能为空")
 		return
 	}
 	if req.Content == "" {
@@ -41,48 +46,45 @@ func CreateReview(c *gin.Context) {
 		return
 	}
 
-	if err := services.CreateReview(&models.Review{
+	if err := services.CreateReview2(&models.Review2{
 		UserID:  UID,
-		PostID:  req.PostID,
+		ReviewID:  req.ReviewID,
 		Content: req.Content,
 	}); err != nil {
+		log.Printf("创建评论失败: %v", err)
 		utils.JsonErrorResponse(c, 500, "创建评论失败")
 		return
 	}
 	utils.JsonSuccessResponse(c, req)
 }
 
-type GetReviewsByPostIDData struct {
-	PostID uint64 `json:"post_id"`
+type GetReviews2ByPostIDData struct {
+	ReviewID uint64 `json:"review_id"`
 	Page int `json:"page"`
 	PageSize int `json:"page_size"`
 }
 
-func GetReviewsByPostID(c *gin.Context) {
-	var req GetReviewsByPostIDData
+func GetReviews2ByPostID(c *gin.Context) {
+	var req GetReviews2ByPostIDData
 	uid, _ := c.Get("userID")
 	UID := uid.(uint64)
 	err := c.ShouldBindJSON(&req)
 	if err != nil {
-        utils.JsonErrorResponse(c, 404, "未找到该评论")
-        return
-    }
-	if err != nil {
 		utils.JsonErrorResponse(c, 501, "参数错误")
 		return
 	}
-	exists := services.GetReviewsByPostID(req.PostID)
+	exists := services.GetReview2sByPostID(req.ReviewID)
 	if exists != nil {
-		utils.JsonErrorResponse(c, 400, "无效的帖子ID")
+		utils.JsonErrorResponse(c, 400, "无效的评论ID")
 		return
 	}
-	if req.PostID == 0 {
-		utils.JsonErrorResponse(c, 400, "帖子ID不能为空")
+	if req.ReviewID == 0 {
+		utils.JsonErrorResponse(c, 400, "评论ID不能为空")
 		return
 	}
 	reviews, total, err := services.GetVisibleReviews(UID, req.Page, req.PageSize)
 	if err != nil {
-		utils.JsonErrorResponse(c, 500, "获取帖子失败")
+		utils.JsonErrorResponse(c, 500, "获取评论失败")
 		return
 	}
 	data := map[string]any{

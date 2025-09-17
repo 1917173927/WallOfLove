@@ -3,8 +3,6 @@ package controllers
 import (
 	"github.com/1917173927/WallOfLove/app/services"
 	"github.com/1917173927/WallOfLove/app/utils"
-	"github.com/1917173927/WallOfLove/conf/database"
-	"github.com/1917173927/WallOfLove/app/models"
 	"github.com/gin-gonic/gin"
 )
 
@@ -23,13 +21,13 @@ func UploadImage(c *gin.Context) {
 		return
 	}
 
-	// 根据 userID 查询 username
-	var user models.User
-	if err := database.DB.Where("id = ?", UID).First(&user).Error; err != nil {
+	// 据userID查username
+	user, err := services.GetUserDataByID(UID)
+	if err != nil {
 		utils.JsonErrorResponse(c, 400, "用户不存在")
 		return
 	}
-	image, err := services.UploadImage(database.DB, c, UID, user.Username, postID, isAvatar, file)
+	image, err := services.UploadImage(c, UID, user.Username, postID, isAvatar, file)
 	if err != nil {
 		utils.JsonErrorResponse(c, 500, err.Error())
 		return

@@ -31,10 +31,9 @@ func JsonSuccessResponse(c *gin.Context, data any) {
 }
 
 func JsonErrorResponse(c *gin.Context, code int, msg string) {
-	JsonResponse(c, http.StatusOK, 200000 + code, msg, nil)
+	JsonResponse(c, http.StatusOK, 200000+code, msg, nil)
 }
 
 func JsonInternalServerErrorResponse(c *gin.Context) {
 	JsonResponse(c, http.StatusInternalServerError, 200500, "Internal server error", nil)
 }
-

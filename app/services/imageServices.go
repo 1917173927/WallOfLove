@@ -3,22 +3,23 @@ package services
 import (
 	"errors"
 	"fmt"
-	"github.com/1917173927/WallOfLove/app/models"
-	"github.com/1917173927/WallOfLove/conf/config"
-	"github.com/gin-gonic/gin"
+	"math/rand"
 	"mime/multipart"
+	"net/http"
+	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
-	"os"
-	"math/rand"
-	"gorm.io/gorm"
-	"net/http"
-	"strconv"
+
+	"github.com/1917173927/WallOfLove/app/models"
+	"github.com/1917173927/WallOfLove/conf/config"
+	"github.com/1917173927/WallOfLove/conf/database"
+	"github.com/gin-gonic/gin"
 )
 
 //上传图片
-func UploadImage(db *gorm.DB, c *gin.Context, userID uint64, username string, postID string, isAvatar string, file *multipart.FileHeader) (*models.Image, error) {
+func UploadImage(c *gin.Context, userID uint64, username string, postID string, isAvatar string, file *multipart.FileHeader) (*models.Image, error) {
 	// 检查图片大小
 	maxSize := config.Config.GetInt64("image.max_size")
 	if maxSize <= 0 {
@@ -27,7 +28,7 @@ func UploadImage(db *gorm.DB, c *gin.Context, userID uint64, username string, po
 	if file.Size > maxSize {
 		return nil, errors.New("图片大小超过限制")
 	}
-	
+
 	// 检查文件类型
 	ext := strings.ToLower(filepath.Ext(file.Filename))
 	if ext != ".jpg" && ext != ".png" {
@@ -76,13 +77,13 @@ func UploadImage(db *gorm.DB, c *gin.Context, userID uint64, username string, po
 		}
 	}
 	image := &models.Image{
-		UserID:   userID,
-		PostID:   postIDUint,
-		FilePath: dst,
-		Size:     file.Size,
+		UserID:    userID,
+		PostID:    postIDUint,
+		FilePath:  dst,
+		Size:      file.Size,
 		CreatedAt: time.Now(),
 	}
-	if err := db.Create(image).Error; err != nil {
+	if err := database.DB.Create(image).Error; err != nil {
 		return nil, fmt.Errorf("保存图片信息失败: %v", err)
 	}
 

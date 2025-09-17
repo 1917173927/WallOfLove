@@ -1,12 +1,10 @@
 package route
 
 import (
-	"github.com/gin-gonic/gin"
 	"github.com/1917173927/WallOfLove/app/controllers"
 	"github.com/1917173927/WallOfLove/app/middleware"
+	"github.com/gin-gonic/gin"
 )
-
-
 
 func Init(r *gin.Engine) {
 	r.MaxMultipartMemory = 64 << 20 // 64MB
@@ -18,6 +16,8 @@ func Init(r *gin.Engine) {
 	r.PUT(pre+"/post", middleware.JWT(), controllers.UpdatePost)
 	r.POST(pre+"/review", middleware.JWT(), controllers.CreateReview)
 	r.GET(pre+"/review/:id", middleware.JWT(), controllers.GetReviewsByPostID)
+	r.POST(pre+"/review2", middleware.JWT(), controllers.CreateReview2)
+	r.GET(pre+"/review2/:id", middleware.JWT(), controllers.GetReviews2ByPostID)
 	r.GET(pre+"/post/:id", middleware.JWT(), controllers.GetVisiblePosts)
 	r.DELETE(pre+"/post/:id", middleware.JWT(), controllers.DeletePost)
 	r.POST(pre+"/blacklist", middleware.JWT(), controllers.BlackUser)

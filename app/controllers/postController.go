@@ -2,14 +2,16 @@ package controllers
 
 import (
 	"errors"
+
 	"github.com/1917173927/WallOfLove/app/models"
 	"github.com/1917173927/WallOfLove/app/services"
 	"github.com/1917173927/WallOfLove/app/utils"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
+
 // 创建帖子
-type PostData struct{
+type PostData struct {
 	Content    string `json:"content" binding:"required"`
 	Anonymous  bool   `json:"anonymous"`
 	Visibility bool   `json:"visibility"`
@@ -18,13 +20,13 @@ type PostData struct{
 func CreatePost(c *gin.Context) {
 	var req PostData
 	uid, _ := c.Get("userID")
-	UID := uid.(uint64)   
+	UID := uid.(uint64)
 	if err := c.ShouldBindJSON(&req); err != nil {
 		utils.JsonErrorResponse(c, 400, "参数错误")
 		return
 	}
-	user,err:=services.GetUserDataByID(UID)
-	if err!=nil{
+	user, err := services.GetUserDataByID(UID)
+	if err != nil {
 		utils.JsonErrorResponse(c, 400, "用户不存在")
 		return
 	}
@@ -33,11 +35,11 @@ func CreatePost(c *gin.Context) {
 		return
 	}
 	if err := services.CreatePost(&models.Post{
-		UserID:     UID,
-		Content:    req.Content,
-		Anonymous:  req.Anonymous,
-		Visibility: req.Visibility,
-		UserNickname: user.Nickname,
+		UserID:        UID,
+		Content:       req.Content,
+		Anonymous:     req.Anonymous,
+		Visibility:    req.Visibility,
+		UserNickname:  user.Nickname,
 		AvatarImageID: user.AvatarImageID,
 	}); err != nil {
 		utils.JsonErrorResponse(c, 500, "创建帖子失败")
@@ -49,44 +51,45 @@ func CreatePost(c *gin.Context) {
 
 // 更新帖子
 type UpdatePostData struct {
-	ID         uint64  `json:"id" binding:"required"`
-	Content    string  `json:"content"`
-	Anonymous  *bool   `json:"anonymous"`
-	Visibility *bool   `json:"visibility"`
+	ID         uint64 `json:"id" binding:"required"`
+	Content    string `json:"content"`
+	Anonymous  *bool  `json:"anonymous"`
+	Visibility *bool  `json:"visibility"`
 }
+
 func UpdatePost(c *gin.Context) {
 	uid, _ := c.Get("userID")
 	UID := uid.(uint64)
 	var req UpdatePostData
-	err := c.ShouldBindJSON(&req); 
+	err := c.ShouldBindJSON(&req)
 	if err != nil {
 		utils.JsonErrorResponse(c, 501, "参数错误")
 		return
 	}
-    
+
 	post, err := services.GetPostDataByID(req.ID)
 	if err != nil {
 		c.Error(errors.New("表白不存在"))
 		return
 	}
-    if UID!=post.UserID {
+	if UID != post.UserID {
 		utils.JsonErrorResponse(c, 512, "无权限")
 		return
 	}
 	if req.Content == "" {
-		req.Content=post.Content
+		req.Content = post.Content
 	}
-    var anonymous bool
-    var visibility bool
+	var anonymous bool
+	var visibility bool
 	if req.Anonymous == nil {
 		anonymous = post.Anonymous
-	}else{
+	} else {
 		anonymous = *req.Anonymous
 	}
-	
+
 	if req.Visibility == nil {
 		visibility = post.Visibility
-	}else{
+	} else {
 		visibility = *req.Visibility
 	}
 
@@ -95,7 +98,7 @@ func UpdatePost(c *gin.Context) {
 		UserID:        UID,
 		Content:       req.Content,
 		Anonymous:     anonymous,
-		Visibility:    visibility,	
+		Visibility:    visibility,
 		Version:       post.Version,
 		UserNickname:  post.UserNickname,
 		AvatarImageID: post.AvatarImageID,
@@ -111,19 +114,21 @@ func UpdatePost(c *gin.Context) {
 		return
 	}
 
-	c.JSON(200, map[string]any{"version": post.Version+1})
+	c.JSON(200, map[string]any{"version": post.Version + 1})
 }
+
 // 删除帖子
 type DeletePostData struct {
-	ID         uint64  `json:"post_id" binding:"required"`
+	ID uint64 `json:"post_id" binding:"required"`
 }
+
 func DeletePost(c *gin.Context) {
 	uid, _ := c.Get("userID")
 	UID := uid.(uint64)
 	var req DeletePostData
 	err := c.ShouldBindJSON(&req)
 	if err != nil {
-		utils.JsonErrorResponse(c,501, "参数错误")
+		utils.JsonErrorResponse(c, 501, "参数错误")
 		return
 	}
 	originalPost, err := services.GetPostDataByID(req.ID)
@@ -144,32 +149,33 @@ func DeletePost(c *gin.Context) {
 }
 
 // GetVisiblePosts 获取未被拉黑的其他人发布的表白
-type PageData struct{
+type PageData struct {
 	PageSize int `json:"page_size"`
-	PageNum int `json:"page_num"`
+	PageNum  int `json:"page_num"`
 }
+
 func GetVisiblePosts(c *gin.Context) {
 	uid, _ := c.Get("userID")
 	UID := uid.(uint64)
 	var req PageData
 	err := c.ShouldBindJSON(&req)
 	if err != nil {
-		utils.JsonErrorResponse(c,501, "参数错误")
+		utils.JsonErrorResponse(c, 501, "参数错误")
 		return
 	}
-	posts,total,err := services.GetVisiblePosts(UID,req.PageNum,req.PageSize)
+	posts, total, err := services.GetVisiblePosts(UID, req.PageNum, req.PageSize)
 	if err != nil {
 		utils.JsonErrorResponse(c, 500, "获取帖子失败")
 		return
 	}
 	for i := range posts {
-		if posts [i].Anonymous {
+		if posts[i].Anonymous {
 			posts[i].UserID = 0
-			posts[i].UserNickname = "?"         
-			posts[i].AvatarImageID = nil      
+			posts[i].UserNickname = "?"
+			posts[i].AvatarImageID = nil
 		}
 	}
-	data:=map[string]any{
+	data := map[string]any{
 		"posts": posts,
 		"total": total,
 	}

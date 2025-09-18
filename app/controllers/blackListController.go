@@ -54,10 +54,10 @@ func UnblackUser(c *gin.Context) {
 func GetBlackList(c *gin.Context) {
 	uid, _ := c.Get("userID")
 	UID := uid.(uint64)
-	blackList, err := services.GetBlackListID(UID)
-	if err != nil {
-		utils.JsonErrorResponse(c, 514, "获取拉黑列表失败")
-		return
-	}
-	utils.JsonSuccessResponse(c, blackList)
+	users, err := services.GetBlackedUsers(UID)
+if err != nil {
+	utils.JsonErrorResponse(c, 500, "获取被拉黑人列表失败")
+	return
+}
+utils.JsonSuccessResponse(c,users)
 }

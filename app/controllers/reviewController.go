@@ -66,7 +66,7 @@ func GetReviewsByPostID(c *gin.Context) {
 		utils.JsonErrorResponse(c, 400, "无效的帖子ID")
 		return
 	}
-	reviews, total, err := services.GetVisibleReviews(UID, req.Page, req.PageSize)
+	reviews, total, err := services.GetVisibleReviews(req.PostID,UID, req.Page, req.PageSize)
 	if err != nil {
 		utils.JsonErrorResponse(c, 500, "获取评论失败")
 		return

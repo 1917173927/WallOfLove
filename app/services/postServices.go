@@ -7,7 +7,7 @@ import (
 	"gorm.io/gorm"
 )
 
-// CreatePost 创建帖子，可以独立发布（无需关联图片）
+// 创建帖子
 func CreatePost(post *models.Post) error {
 	return database.DB.Create(post).Error
 }
@@ -40,12 +40,9 @@ func DeletePost(postID uint64) error {
 	return database.DB.Delete(&models.Post{}, "id = ?", postID).Error
 }
 
-// GetVisiblePosts 获取未被拉黑的其他人发布的表白
+//获取未被拉黑的其他人发布的表白
 func GetVisiblePosts(userID uint64, page, pageSize int) ([]models.Post, int64, error) {
-	sub := database.DB.Model(&models.Blacklist{}).
-		Where("user_id = ?", userID).
-		Select("blocked_id")
-
+	sub, _ := utils.GetBlackListIDs(userID)
 	var total int64
 	database.DB.Model(&models.Post{}).
 		Where("visibility = ?", true).

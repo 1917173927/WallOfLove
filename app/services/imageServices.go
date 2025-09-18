@@ -90,7 +90,7 @@ func UploadImage(c *gin.Context, userID uint64, username string, postID string, 
 	return image, nil
 }
 
-// randomString 生成随机字符串
+//生成随机字符串
 func randomString(length int) string {
 	const charset = "abcdefghijklmnopqrstuvwxyz0123456789"
 	b := make([]byte, length)

@@ -79,6 +79,7 @@ func Login(c *gin.Context) {
 		utils.JsonErrorResponse(c, 501, "参数错误")
 		return
 	}
+	//检查是否有此用户
 	user, err := services.GetUser(data.Username)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -88,11 +89,12 @@ func Login(c *gin.Context) {
 		}
 		return
 	}
-
+	// 密码比对
 	if err := services.CompareHash(data.Password, user.Password); err != nil {
 		utils.JsonErrorResponse(c, 505, "密码错误")
 		return
 	}
+	//生成token
 	token, err := middleware.GenerateToken(user.ID)
 	if err != nil {
 		utils.JsonErrorResponse(c, 506, "生成token失败")

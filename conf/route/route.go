@@ -22,4 +22,5 @@ func Init(r *gin.Engine) {
 	r.POST(pre+"/blacklist", middleware.JWT(), controllers.BlackUser)
 	r.DELETE(pre+"/blacklist", middleware.JWT(), controllers.UnblackUser)
 	r.POST(pre+"/uploadimage", middleware.JWT(), controllers.UploadImage)
+	r.GET(pre+"/blacklist", middleware.JWT(), controllers.GetBlackList)
 }

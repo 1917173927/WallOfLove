@@ -53,8 +53,8 @@ func CreatePost(c *gin.Context) {
 type UpdatePostData struct {
 	ID         uint64 `json:"id" binding:"required"`
 	Content    string `json:"content"`
-	Anonymous  *bool  `json:"anonymous"`
-	Visibility *bool  `json:"visibility"`
+	Anonymous  *bool  `json:"anonymous"`//bool值不能为空，只能通过传指针来判断
+	Visibility *bool  `json:"visibility"`//同上
 }
 
 func UpdatePost(c *gin.Context) {
@@ -66,27 +66,30 @@ func UpdatePost(c *gin.Context) {
 		utils.JsonErrorResponse(c, 501, "参数错误")
 		return
 	}
-
 	post, err := services.GetPostDataByID(req.ID)
 	if err != nil {
 		c.Error(errors.New("表白不存在"))
 		return
 	}
+	// 检查是否有权限修改帖子
 	if UID != post.UserID {
 		utils.JsonErrorResponse(c, 512, "无权限")
 		return
 	}
+	//若未填写内容，则用原值
 	if req.Content == "" {
 		req.Content = post.Content
 	}
+	//转指针
 	var anonymous bool
 	var visibility bool
+	//若未填写匿名，则用原值
 	if req.Anonymous == nil {
 		anonymous = post.Anonymous
 	} else {
 		anonymous = *req.Anonymous
 	}
-
+	//若未填写可见性，则用原值
 	if req.Visibility == nil {
 		visibility = post.Visibility
 	} else {
@@ -103,7 +106,7 @@ func UpdatePost(c *gin.Context) {
 		UserNickname:  post.UserNickname,
 		AvatarImageID: post.AvatarImageID,
 	}
-
+	//更新表白信息，乐观锁
 	err = services.UpdatePost(&updatedPost, post.Version)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -136,6 +139,7 @@ func DeletePost(c *gin.Context) {
 		utils.JsonErrorResponse(c, 508, "表白不存在")
 		return
 	}
+	// 检查是否有权限删除帖子
 	if originalPost.UserID != UID {
 		utils.JsonErrorResponse(c, 512, "无权限")
 		return
@@ -168,6 +172,7 @@ func GetVisiblePosts(c *gin.Context) {
 		utils.JsonErrorResponse(c, 500, "获取帖子失败")
 		return
 	}
+	//匿名
 	for i := range posts {
 		if posts[i].Anonymous {
 			posts[i].UserID = 0

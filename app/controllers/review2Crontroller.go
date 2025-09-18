@@ -12,7 +12,7 @@ type Review2Data struct {
 	ReviewID  uint64      `json:"review_id"`
 	Content   string    `json:"content"`
 }
-
+//创建回复
 func CreateReview2(c *gin.Context) {
 	var req Review2Data
 	uid, _ := c.Get("userID")

@@ -3,6 +3,7 @@ package controllers
 import (
 	"errors"
 
+	"github.com/1917173927/WallOfLove/app/apiException"
 	"github.com/1917173927/WallOfLove/app/middleware"
 	"github.com/1917173927/WallOfLove/app/models"
 	"github.com/1917173927/WallOfLove/app/services"
@@ -23,22 +24,22 @@ func Register(c *gin.Context) {
 	var data RegisterData
 	err := c.ShouldBindJSON(&data)
 	if err != nil {
-		utils.JsonErrorResponse(c, 501, "参数错误")
+		apiException.AbortWithException(c,apiException.PwdOrParamError,err)
 		return
 	}
 	//判断账号是否已经存在
 	err = services.CheckUsername(data.Username)
 	if err == nil {
-		utils.JsonErrorResponse(c, 502, "账号已被注册")
+		apiException.AbortWithException(c,apiException.UserAlreadyExisted,err)
 		return
 	} else if err != gorm.ErrRecordNotFound {
-		utils.JsonInternalServerErrorResponse(c)
+		apiException.AbortWithException(c,apiException.ServerError,err)
 		return
 	}
 	//哈希加密密码
 	hash, err := services.HashPassword(data.Password)
 	if err != nil {
-		utils.JsonErrorResponse(c, 503, "加密失败")
+		apiException.AbortWithException(c,apiException.ServerError,err)
 		return
 	}
 	data.Password = hash
@@ -55,7 +56,7 @@ func Register(c *gin.Context) {
 		AvatarImageID: data.AvatarImageID,
 	})
 	if err != nil {
-		utils.JsonInternalServerErrorResponse(c)
+		apiException.AbortWithException(c,apiException.ServerError,err)
 		return
 	}
 	utils.JsonSuccessResponse(c, nil)
@@ -76,28 +77,28 @@ func Login(c *gin.Context) {
 	var data LoginData
 	err := c.ShouldBindJSON(&data)
 	if err != nil {
-		utils.JsonErrorResponse(c, 501, "参数错误")
+		apiException.AbortWithException(c,apiException.ParamError,err)
 		return
 	}
 	//检查是否有此用户
 	user, err := services.GetUser(data.Username)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			utils.JsonErrorResponse(c, 504, "用户不存在")
+			apiException.AbortWithException(c,apiException.NotFindUser,err)
 		} else {
-			utils.JsonInternalServerErrorResponse(c)
+			apiException.AbortWithException(c,apiException.ServerError,err)
 		}
 		return
 	}
 	// 密码比对
 	if err := services.CompareHash(data.Password, user.Password); err != nil {
-		utils.JsonErrorResponse(c, 505, "密码错误")
+		apiException.AbortWithException(c,apiException.NoThatPasswordOrWrong,err)
 		return
 	}
 	//生成token
 	token, err := middleware.GenerateToken(user.ID)
 	if err != nil {
-		utils.JsonErrorResponse(c, 506, "生成token失败")
+		apiException.AbortWithException(c,apiException.ServerError,err)
 		return
 	}
 	logdata := Logdata{

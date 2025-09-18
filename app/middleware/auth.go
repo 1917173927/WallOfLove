@@ -2,10 +2,9 @@ package middleware
 
 import (
 	"errors"
-	"net/http"
 	"time"
 
-	"github.com/1917173927/WallOfLove/app/utils"
+	"github.com/1917173927/WallOfLove/app/apiException"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 )
@@ -28,13 +27,13 @@ func JWT() gin.HandlerFunc {
 		// 从 Header 拿 token
 		auth := c.GetHeader("Authorization")
 		if auth == "" {
-			utils.JsonErrorResponse(c, 401, "缺少token")
+			apiException.AbortWithException(c,apiException.NotLogin,nil)
 			c.Abort()
 			return
 		}
 		// 去掉 "Bearer "
 		if len(auth) < 7 || auth[:7] != "Bearer " {
-			utils.JsonErrorResponse(c, 401, "token格式错误")
+			apiException.AbortWithException(c,apiException.NotLogin,nil)
 			c.Abort()
 			return
 		}
@@ -47,9 +46,9 @@ func JWT() gin.HandlerFunc {
 		if err != nil || !token.Valid {
 			//先区分是不是过期
 			if errors.Is(err, jwt.ErrTokenExpired) {
-				utils.JsonErrorResponse(c, 402, "token已过期")
+				apiException.AbortWithException(c,apiException.TokenExpired,err)
 			} else {
-				utils.JsonErrorResponse(c, 401, "token无效")
+				apiException.AbortWithException(c,apiException.NotLogin,nil)
 			}
 			c.Abort()
 			return
@@ -61,13 +60,8 @@ func JWT() gin.HandlerFunc {
 			c.Set("userID", userID)
 			c.Next()
 		} else {
-			utils.JsonErrorResponse(c, 401, "token claims错误")
+			apiException.AbortWithException(c,apiException.NotLogin,nil)
 			c.Abort()
 		}
 	}
-}
-
-// 访问不存在地址时404
-func HandleNotFound(c *gin.Context) {
-	utils.JsonResponse(c, 404, 200404, http.StatusText(http.StatusNotFound), nil)
 }

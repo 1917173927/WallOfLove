@@ -3,9 +3,9 @@ package controllers
 import (
 	"errors"
 
+	"github.com/1917173927/WallOfLove/app/apiException"
 	"github.com/1917173927/WallOfLove/app/models"
 	"github.com/1917173927/WallOfLove/app/services"
-	"github.com/1917173927/WallOfLove/app/utils"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
@@ -25,13 +25,13 @@ func UpdateProfile(c *gin.Context) {
 	var req updateProfileData
 	err := c.ShouldBindJSON(&req)
 	if err != nil {
-		utils.JsonErrorResponse(c, 501, "参数错误")
+		apiException.AbortWithException(c,apiException.PwdOrParamError,err)
 		return
 	}
-	//检测用户是否存在
+	//获得用户原信息
 	user, err := services.GetUserDataByID(UID)
 	if err != nil {
-		c.Error(errors.New("用户不存在"))
+		apiException.AbortWithException(c,apiException.ServerError,err)
 		return
 	}
 	//若未填写昵称，则用原值
@@ -45,12 +45,12 @@ func UpdateProfile(c *gin.Context) {
 	//若未填写密码，则用原值，若要更改密码，则需填写原密码，并验证原密码是否正确，若正确，则用新密码，否则报错
 	if req.Password != "" {
 		if err := services.CompareHash(req.OriginalPassword, user.Password); err != nil {
-			c.Error(errors.New("密码错误"))
+			apiException.AbortWithException(c,apiException.NoThatPasswordOrWrong,err)
 			return
 		}
 		newHash, err := services.HashPassword(req.Password)
 		if err != nil {
-			c.Error(errors.New("加密失败"))
+			apiException.AbortWithException(c,apiException.ServerError,err)
 			return
 		}
 		req.Password = newHash
@@ -74,9 +74,9 @@ func UpdateProfile(c *gin.Context) {
 	err = services.UpdateProfile(&updatedUser, user.Version)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			c.Error(errors.New("数据已被其他会话修改，请重试"))
+			apiException.AbortWithException(c,apiException.ConflictError,err)
 		} else {
-			c.Error(errors.New("更新用户信息失败"))
+			apiException.AbortWithException(c,apiException.ServerError,err)
 		}
 		return
 	}

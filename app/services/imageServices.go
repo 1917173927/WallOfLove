@@ -1,7 +1,6 @@
 package services
 
 import (
-	"errors"
 	"fmt"
 	"math/rand"
 	"mime/multipart"
@@ -11,8 +10,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
 	"github.com/1917173927/WallOfLove/app/models"
+	"github.com/1917173927/WallOfLove/app/utils/errno"
 	"github.com/1917173927/WallOfLove/conf/config"
 	"github.com/1917173927/WallOfLove/conf/database"
 	"github.com/gin-gonic/gin"
@@ -26,36 +25,36 @@ func UploadImage(c *gin.Context, userID uint64, username string, postID string, 
 		maxSize = 2 * 1024 * 1024 // 默认 2MB
 	}
 	if file.Size > maxSize {
-		return nil, errors.New("图片大小超过限制")
+		return nil, errno.ErrImageSizeExceeded
 	}
 
 	// 检查文件类型
 	ext := strings.ToLower(filepath.Ext(file.Filename))
 	if ext != ".jpg" && ext != ".png" {
-		return nil, errors.New("仅支持 JPG 和 PNG 格式的图片")
+		return nil,errno.ErrImageTypeInvalid
 	}
 
 	// 验证文件内容类型
 	fileContent, err := file.Open()
 	if err != nil {
-		return nil, fmt.Errorf("打开文件失败: %v", err)
+		return nil,errno.ErrImageUploadFailed
 	}
 	defer fileContent.Close()
 
 	buffer := make([]byte, 512)
 	if _, err := fileContent.Read(buffer); err != nil {
-		return nil, fmt.Errorf("读取文件失败: %v", err)
+		return nil, errno.ErrImageUploadFailed
 	}
 	contentType := http.DetectContentType(buffer)
 	if !strings.HasPrefix(contentType, "image/") {
-		return nil, errors.New("文件内容不是有效的图片")
+		return nil, errno.ErrNotImage
 	}
 
 	// 创建用户专属文件夹
 	userFolder := fmt.Sprintf("%d-%s", userID, username)
 	userFolderPath := filepath.Join("images", userFolder)
 	if err := os.MkdirAll(userFolderPath, os.ModePerm); err != nil {
-		return nil, fmt.Errorf("创建用户文件夹失败: %v", err)
+		return nil, errno.ErrImageUploadFailed
 	}
 
 	// 生成唯一文件名
@@ -65,7 +64,7 @@ func UploadImage(c *gin.Context, userID uint64, username string, postID string, 
 
 	// 保存图片到服务器
 	if err := c.SaveUploadedFile(file, dst); err != nil {
-		return nil, fmt.Errorf("保存文件失败: %v", err)
+		return nil,errno.ErrImageUploadFailed
 	}
 
 	// 保存图片信息到数据库
@@ -84,9 +83,8 @@ func UploadImage(c *gin.Context, userID uint64, username string, postID string, 
 		CreatedAt: time.Now(),
 	}
 	if err := database.DB.Create(image).Error; err != nil {
-		return nil, fmt.Errorf("保存图片信息失败: %v", err)
+		return nil,errno.ErrImageUploadFailed
 	}
-
 	return image, nil
 }
 

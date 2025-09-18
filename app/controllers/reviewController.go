@@ -1,9 +1,9 @@
 package controllers
 
 import (
-
-
 	"time"
+
+	"github.com/1917173927/WallOfLove/app/apiException"
 	"github.com/1917173927/WallOfLove/app/models"
 	"github.com/1917173927/WallOfLove/app/services"
 	"github.com/1917173927/WallOfLove/app/utils"
@@ -11,8 +11,8 @@ import (
 )
 
 type ReviewData struct {
-	UserID    uint64      `json:"user_id"`
-	PostID    uint64      `json:"post_id"`
+	UserID    uint64    `json:"user_id"`
+	PostID    uint64    `json:"post_id"`
 	Content   string    `json:"content"`
 	CreatedAt time.Time `json:"created_at"`
 }
@@ -22,16 +22,16 @@ func CreateReview(c *gin.Context) {
 	uid, _ := c.Get("userID")
 	UID := uid.(uint64)
 	if err := c.ShouldBindJSON(&req); err != nil {
-		utils.JsonErrorResponse(c, 400, "参数错误")
+		apiException.AbortWithException(c,apiException.ParamError,err)
 		return
 	}
-	exists := services.GetReviewsByPostID(req.PostID)
-	if exists != nil {
-		utils.JsonErrorResponse(c, 400, "无效的帖子ID")
+	err := services.GetReviewsByPostID(req.PostID)
+	if err != nil {
+		apiException.AbortWithException(c,apiException.TargetError,err)
 		return
 	}
 	if req.Content == "" {
-		utils.JsonErrorResponse(c, 400, "评论内容不能为空")
+		apiException.AbortWithException(c,apiException.EmptyError,nil)
 		return
 	}
 
@@ -40,7 +40,7 @@ func CreateReview(c *gin.Context) {
 		PostID:  req.PostID,
 		Content: req.Content,
 	}); err != nil {
-		utils.JsonErrorResponse(c, 500, "创建评论失败")
+		apiException.AbortWithException(c,apiException.ServerError,err)
 		return
 	}
 	utils.JsonSuccessResponse(c, req)
@@ -58,17 +58,17 @@ func GetReviewsByPostID(c *gin.Context) {
 	UID := uid.(uint64)
 	err := c.ShouldBindJSON(&req)
 	if err != nil {
-		utils.JsonErrorResponse(c, 501, "参数错误")
+		apiException.AbortWithException(c,apiException.ParamError,err)
 		return
 	}
-	exists := services.GetReviewsByPostID(req.PostID)
-	if exists != nil {
-		utils.JsonErrorResponse(c, 400, "无效的帖子ID")
+	err = services.GetReviewsByPostID(req.PostID)
+	if err != nil {
+		apiException.AbortWithException(c,apiException.TargetError,err)
 		return
 	}
 	reviews, total, err := services.GetVisibleReviews(req.PostID,UID, req.Page, req.PageSize)
 	if err != nil {
-		utils.JsonErrorResponse(c, 500, "获取评论失败")
+		apiException.AbortWithException(c,apiException.ServerError,err)
 		return
 	}
 	data := map[string]any{

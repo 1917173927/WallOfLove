@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"github.com/1917173927/WallOfLove/app/apiException"
 	"github.com/1917173927/WallOfLove/app/services"
 	"github.com/1917173927/WallOfLove/app/utils"
 	"github.com/gin-gonic/gin"
@@ -17,16 +18,16 @@ func BlackUser(c *gin.Context) {
 	var req BlackListData
 	err := c.ShouldBindJSON(&req)
 	if err != nil {
-		utils.JsonErrorResponse(c, 501, "参数错误")
+		apiException.AbortWithException(c,apiException.ParamError,err)
 		return
 	}
 	if UID == req.BlockedID {
-		utils.JsonErrorResponse(c, 511, "不能拉黑自己")
+		apiException.AbortWithException(c,apiException.IllegalTarget,nil)
 		return
 	}
 	err = services.BlackUser(UID, req.BlockedID)
 	if err != nil {
-		utils.JsonErrorResponse(c, 512, "拉黑失败")
+		apiException.AbortWithException(c,apiException.ServerError,err)
 		return
 	}
 	utils.JsonSuccessResponse(c, nil)
@@ -39,12 +40,12 @@ func UnblackUser(c *gin.Context) {
 	var req BlackListData
 	err := c.ShouldBindJSON(&req)
 	if err != nil {
-		utils.JsonErrorResponse(c, 501, "参数错误")
+		apiException.AbortWithException(c,apiException.ParamError,err)
 		return
 	}
 	err = services.UnblackUser(UID, req.BlockedID)
 	if err != nil {
-		utils.JsonErrorResponse(c, 513, "取消拉黑失败")
+		apiException.AbortWithException(c,apiException.ServerError,err)
 		return
 	}
 	utils.JsonSuccessResponse(c, nil)
@@ -56,7 +57,7 @@ func GetBlackList(c *gin.Context) {
 	UID := uid.(uint64)
 	users, err := services.GetBlackedUsers(UID)
 if err != nil {
-	utils.JsonErrorResponse(c, 500, "获取被拉黑人列表失败")
+	apiException.AbortWithException(c,apiException.ServerError,err)
 	return
 }
 utils.JsonSuccessResponse(c,users)

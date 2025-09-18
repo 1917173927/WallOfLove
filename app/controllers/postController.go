@@ -3,6 +3,7 @@ package controllers
 import (
 	"errors"
 
+	"github.com/1917173927/WallOfLove/app/apiException"
 	"github.com/1917173927/WallOfLove/app/models"
 	"github.com/1917173927/WallOfLove/app/services"
 	"github.com/1917173927/WallOfLove/app/utils"
@@ -22,16 +23,16 @@ func CreatePost(c *gin.Context) {
 	uid, _ := c.Get("userID")
 	UID := uid.(uint64)
 	if err := c.ShouldBindJSON(&req); err != nil {
-		utils.JsonErrorResponse(c, 400, "参数错误")
+		apiException.AbortWithException(c,apiException.ParamError,err)
 		return
 	}
 	user, err := services.GetUserDataByID(UID)
 	if err != nil {
-		utils.JsonErrorResponse(c, 400, "用户不存在")
+		apiException.AbortWithException(c,apiException.ServerError,err)
 		return
 	}
 	if req.Content == "" {
-		utils.JsonErrorResponse(c, 400, "表白内容不能为空")
+		apiException.AbortWithException(c,apiException.EmptyError,nil)
 		return
 	}
 	if err := services.CreatePost(&models.Post{
@@ -42,7 +43,7 @@ func CreatePost(c *gin.Context) {
 		UserNickname:  user.Nickname,
 		AvatarImageID: user.AvatarImageID,
 	}); err != nil {
-		utils.JsonErrorResponse(c, 500, "创建帖子失败")
+		apiException.AbortWithException(c,apiException.ServerError,err)
 		return
 	}
 
@@ -63,17 +64,17 @@ func UpdatePost(c *gin.Context) {
 	var req UpdatePostData
 	err := c.ShouldBindJSON(&req)
 	if err != nil {
-		utils.JsonErrorResponse(c, 501, "参数错误")
+		apiException.AbortWithException(c,apiException.ParamError,err)
 		return
 	}
 	post, err := services.GetPostDataByID(req.ID)
 	if err != nil {
-		c.Error(errors.New("表白不存在"))
+		apiException.AbortWithException(c,apiException.TargetError,err)
 		return
 	}
 	// 检查是否有权限修改帖子
 	if UID != post.UserID {
-		utils.JsonErrorResponse(c, 512, "无权限")
+		apiException.AbortWithException(c,apiException.NotPermission,nil)
 		return
 	}
 	//若未填写内容，则用原值
@@ -110,9 +111,10 @@ func UpdatePost(c *gin.Context) {
 	err = services.UpdatePost(&updatedPost, post.Version)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			c.Error(errors.New("数据已被其他会话修改，请重试"))
+			apiException.AbortWithException(c,apiException.ConflictError,err)
+			return
 		} else {
-			c.Error(errors.New("更新表白信息失败"))
+			apiException.AbortWithException(c,apiException.ServerError,err)
 		}
 		return
 	}
@@ -131,22 +133,22 @@ func DeletePost(c *gin.Context) {
 	var req DeletePostData
 	err := c.ShouldBindJSON(&req)
 	if err != nil {
-		utils.JsonErrorResponse(c, 501, "参数错误")
+		apiException.AbortWithException(c,apiException.ParamError,err)
 		return
 	}
 	originalPost, err := services.GetPostDataByID(req.ID)
 	if err != nil {
-		utils.JsonErrorResponse(c, 508, "表白不存在")
+		apiException.AbortWithException(c,apiException.TargetError,err)
 		return
 	}
 	// 检查是否有权限删除帖子
 	if originalPost.UserID != UID {
-		utils.JsonErrorResponse(c, 512, "无权限")
+		apiException.AbortWithException(c,apiException.NotPermission,nil)
 		return
 	}
 	err = services.DeletePost(req.ID)
 	if err != nil {
-		utils.JsonErrorResponse(c, 511, "删除帖子失败")
+		apiException.AbortWithException(c,apiException.ServerError,err)
 		return
 	}
 	utils.JsonSuccessResponse(c, nil)
@@ -164,12 +166,12 @@ func GetVisiblePosts(c *gin.Context) {
 	var req PageData
 	err := c.ShouldBindJSON(&req)
 	if err != nil {
-		utils.JsonErrorResponse(c, 501, "参数错误")
+		apiException.AbortWithException(c,apiException.ParamError,err)
 		return
 	}
 	posts, total, err := services.GetVisiblePosts(UID, req.PageNum, req.PageSize)
 	if err != nil {
-		utils.JsonErrorResponse(c, 500, "获取帖子失败")
+		apiException.AbortWithException(c,apiException.ServerError,err)
 		return
 	}
 	//匿名

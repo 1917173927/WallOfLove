@@ -16,6 +16,10 @@ func GetReviewsByPostID(postID uint64) error {
 	var reviews []models.Review
 	return database.DB.Where("post_id = ?", postID).Find(&reviews).Error
 }
+func GetReviewByReviewID(ReviewID uint64) error {
+	var reviews []models.Review
+	return database.DB.Where("post_id = ?", ReviewID).First(&reviews).Error
+}
 //获取未被拉黑的其他人发布的评论
 func GetVisibleReviews(postID uint64,userID uint64, page, pageSize int) ([]models.Review, int64, error) {
 	sub, _ := utils.GetBlackListIDs(userID)

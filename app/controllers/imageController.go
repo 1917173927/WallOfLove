@@ -1,8 +1,12 @@
 package controllers
 
 import (
+	"errors"
+
+	"github.com/1917173927/WallOfLove/app/apiException"
 	"github.com/1917173927/WallOfLove/app/services"
 	"github.com/1917173927/WallOfLove/app/utils"
+	"github.com/1917173927/WallOfLove/app/utils/errno"
 	"github.com/gin-gonic/gin"
 )
 
@@ -17,19 +21,28 @@ func UploadImage(c *gin.Context) {
 	// 获取上传的文件
 	file, err := c.FormFile("file")
 	if err != nil {
-		utils.JsonErrorResponse(c, 400, "获取文件失败")
+		apiException.AbortWithException(c,apiException.ServerError,err)
 		return
 	}
 
 	// 据userID查username
 	user, err := services.GetUserDataByID(UID)
 	if err != nil {
-		utils.JsonErrorResponse(c, 400, "用户不存在")
+		apiException.AbortWithException(c,apiException.ServerError,err)
 		return
 	}
 	image, err := services.UploadImage(c, UID, user.Username, postID, isAvatar, file)
 	if err != nil {
-		utils.JsonErrorResponse(c, 500, err.Error())
+		apiException.AbortWithException(c,apiException.UploadFileError,err)
+		return
+	}else if errors.Is(err,errno.ErrImageSizeExceeded){
+		apiException.AbortWithException(c,apiException.FileSizeExceedError,err)
+		return
+	}else if errors.Is(err,errno.ErrImageTypeInvalid){
+		apiException.AbortWithException(c,apiException.ImageFormatError,err)
+		return
+	}else if errors.Is(err,errno.ErrNotImage){
+		apiException.AbortWithException(c,apiException.FileNotImageError,err)
 		return
 	}
 

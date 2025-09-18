@@ -16,7 +16,7 @@ type RegisterData struct {
 	Username      string  `json:"username"        binding:"required"`
 	Name          string  `json:"name"            binding:"required"`
 	Password      string  `json:"password"        binding:"required,pwdmin"`
-	AvatarImageID *uint64 `json:"avatar_image_id"`
+	AvatarPath    string  `json:"avatar_path"`
 }
 
 // 注册
@@ -44,16 +44,16 @@ func Register(c *gin.Context) {
 	}
 	data.Password = hash
 	//若未上传头像，则用默认头像
-	if data.AvatarImageID == nil {
-		defaultID := uint64(1)
-		data.AvatarImageID = &defaultID
+	if data.AvatarPath == "" {
+		defaultID := "images/default/default.jpg"
+		data.AvatarPath = defaultID
 	}
 	//注册用户
 	err = services.Register(models.User{
 		Username:      data.Username,
 		Nickname:      data.Name,
 		Password:      hash,
-		AvatarImageID: data.AvatarImageID,
+		AvatarPath:    data.AvatarPath,
 	})
 	if err != nil {
 		apiException.AbortWithException(c,apiException.ServerError,err)

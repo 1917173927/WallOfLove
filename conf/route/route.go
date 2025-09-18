@@ -8,14 +8,13 @@ import (
 
 func Init(r *gin.Engine) {
 	r.MaxMultipartMemory = 64 << 20 // 64MB
-
+    r.Static("/images", "./images")
 	// 全局前缀
 	api := r.Group("/api")
 	{
 		// 无需 JWT
 		api.POST("/register", controllers.Register)
 		api.POST("/login", controllers.Login)
-
 		// 需要 JWT
 		auth := api.Group("")
 		auth.Use(middleware.JWT())

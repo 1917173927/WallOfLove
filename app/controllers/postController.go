@@ -41,7 +41,7 @@ func CreatePost(c *gin.Context) {
 		Anonymous:     req.Anonymous,
 		Visibility:    req.Visibility,
 		UserNickname:  user.Nickname,
-		AvatarImageID: user.AvatarImageID,
+		AvatarPath:    user.AvatarPath,
 	}); err != nil {
 		apiException.AbortWithException(c,apiException.ServerError,err)
 		return
@@ -105,7 +105,7 @@ func UpdatePost(c *gin.Context) {
 		Visibility:    visibility,
 		Version:       post.Version,
 		UserNickname:  post.UserNickname,
-		AvatarImageID: post.AvatarImageID,
+		AvatarPath:    post.AvatarPath,
 	}
 	//更新表白信息，乐观锁
 	err = services.UpdatePost(&updatedPost, post.Version)
@@ -154,10 +154,14 @@ func DeletePost(c *gin.Context) {
 	utils.JsonSuccessResponse(c, nil)
 }
 
-// GetVisiblePosts 获取未被拉黑的其他人发布的表白
+//获取未被拉黑的其他人发布的表白
 type PageData struct {
 	PageSize int `json:"page_size"`
 	PageNum  int `json:"page_num"`
+}
+type postWithPaths struct {
+	models.Post              
+	ImagePaths  []string      `json:"image_paths"` 
 }
 
 func GetVisiblePosts(c *gin.Context) {
@@ -179,11 +183,23 @@ func GetVisiblePosts(c *gin.Context) {
 		if posts[i].Anonymous {
 			posts[i].UserID = 0
 			posts[i].UserNickname = "?"
-			posts[i].AvatarImageID = nil
+			posts[i].AvatarPath = ""
 		}
 	}
+	// 拼图片路径
+    out := make([]postWithPaths, 0, len(posts))
+    for _, p := range posts {
+	    paths := make([]string, 0, len(p.Images))
+	    for _, img := range p.Images {
+		    paths = append(paths, img.FilePath) // 只拿路径
+	    }
+	    out = append(out, postWithPaths{
+		    Post:       p,
+		    ImagePaths: paths,
+	    })
+}
 	data := map[string]any{
-		"posts": posts,
+		"posts": out,
 		"total": total,
 	}
 	utils.JsonSuccessResponse(c, data)

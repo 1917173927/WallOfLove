@@ -15,7 +15,7 @@ type updateProfileData struct {
 	Username         string  `json:"username"`
 	OriginalPassword string  `json:"original_password"`
 	Password         string  `json:"password" binding:"pwdmin"`
-	AvatarID         *uint64 `json:"avatar_id"`
+	AvatarPath       string  `json:"avatar_path"`
 }
 //更新用户信息
 func UpdateProfile(c *gin.Context) {
@@ -58,8 +58,8 @@ func UpdateProfile(c *gin.Context) {
 		req.Password = user.Password
 	}
 	//若未填写头像，则用原值
-	if req.AvatarID == nil {
-		req.AvatarID = user.AvatarImageID
+	if req.AvatarPath == "" {
+		req.AvatarPath = user.AvatarPath
 	}
 
 	updatedUser := models.User{
@@ -67,7 +67,7 @@ func UpdateProfile(c *gin.Context) {
 		Nickname:      req.Nickname,
 		Username:      req.Username,
 		Password:      req.Password,
-		AvatarImageID: req.AvatarID,
+		AvatarPath:    req.AvatarPath,
 		Version:       user.Version,
 	}
 	//更新用户信息，乐观锁

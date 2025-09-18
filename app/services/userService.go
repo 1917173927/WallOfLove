@@ -59,7 +59,7 @@ func UpdateProfile(user *models.User, oldVersion uint) error {
 			"nickname":        user.Nickname,
 			"username":        user.Username,
 			"password":        user.Password,
-			"avatar_image_id": user.AvatarImageID,
+			"avatar_path":     user.AvatarPath,
 			"version":         gorm.Expr("version + 1"),
 		})
 	if tx.RowsAffected == 0 {

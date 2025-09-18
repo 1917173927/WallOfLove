@@ -7,7 +7,7 @@ type User struct {
 	Username      string    `json:"username"`
 	Password      string    `json:"-"`
 	Nickname      string    `json:"nickname"`
-	AvatarImageID *uint64   `json:"avatar_image_id"`
+	AvatarPath    string   `json:"avatar_path"`
 	CreatedAt     time.Time `json:"created_at"`
 	Version       uint      `grom:"default:1" json:"version"`
 }

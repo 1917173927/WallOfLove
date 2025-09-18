@@ -9,7 +9,7 @@ type Post struct {
     Anonymous    bool       `json:"anonymous"`
     Visibility   bool       `json:"visibility"`
     UserNickname string     `json:"user_nickname"`
-    AvatarImageID *uint64   `json:"avatar_image_id"`
+    AvatarPath   string     `json:"avatar_path"`
     CreatedAt    time.Time  `json:"created_at"`
     UpdatedAt    time.Time  `json:"updated_at"`
     Version      uint       `grom:"default:1" json:"version"`

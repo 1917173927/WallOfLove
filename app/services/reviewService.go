@@ -6,6 +6,7 @@ import (
 	"github.com/1917173927/WallOfLove/app/models"
 	"github.com/1917173927/WallOfLove/app/utils"
 	"github.com/1917173927/WallOfLove/conf/database"
+	"gorm.io/gorm"
 )
 
 //创建评论
@@ -18,10 +19,10 @@ func GetReviewsByPostID(postID uint64) error {
 }
 func GetReviewByReviewID(ReviewID uint64) error {
 	var reviews []models.Review
-	return database.DB.Where("post_id = ?", ReviewID).First(&reviews).Error
+	return database.DB.Where("id = ?", ReviewID).First(&reviews).Error
 }
-//获取未被拉黑的其他人发布的评论
-func GetVisibleReviews(postID uint64,userID uint64, page, pageSize int) ([]models.Review, int64, error) {
+//获取未被拉黑的其他人发布的评论,现在是获得所有评论and每条评论的前两条回复
+func GetVisibleReviews(reviewID uint64,userID uint64, page, pageSize int) ([]models.Review, int64, error) {
 	sub, _ := utils.GetBlackListIDs(userID)
 	var total int64
 	database.DB.Model(&models.Review{}).
@@ -29,30 +30,50 @@ func GetVisibleReviews(postID uint64,userID uint64, page, pageSize int) ([]model
 		Count(&total)
 
 	var list []models.Review
-	err := database.DB.Preload("Review2s").
-	    Where("post_id = ?", postID).
+	err := database.DB.Preload("Replies", func(db *gorm.DB) *gorm.DB {
+		return db.Order("created_at DESC").Limit(2)
+	}).
+		Where("id = ?", reviewID).
 		Where("user_id NOT IN (?)", sub).
 		Order("created_at desc").
 		Scopes(utils.Paginate(page, pageSize)).
 		Find(&list).Error
-		
+	
 	for i := range list {
-		filterReview2s(&list[i], sub)
+		filterReplies(&list[i], sub)
 	}
-
 	return list, total, err
 }
 //过滤被拉黑人的回复
-func filterReview2s(review *models.Review, blackList []uint64) {
-	if len(review.Review2s) == 0 || len(blackList) == 0 {
+func filterReplies(review *models.Review, blackList []uint64) {
+	if len(review.Replies) == 0 || len(blackList) == 0 {
 		return
 	}
 	// 把不在黑名单里的回复留下
-	filtered := make([]models.Review2, 0, len(review.Review2s))
-	for _, r2 := range review.Review2s {
+	filtered := make([]models.Reply, 0, len(review.Replies))
+	for _, r2 := range review.Replies {
 		if !slices.Contains(blackList, r2.UserID) {
 			filtered = append(filtered, r2)
 		}
 	}
-	review.Review2s = filtered
+	review.Replies = filtered
+}
+
+func GetRepliesByReviewID(reviewID uint64,userID uint64,page int,pageSize int) ([]models.Reply,int64, error) {
+	sub, _ := utils.GetBlackListIDs(userID)
+	var total int64
+
+	database.DB.Model(&models.Reply{}).
+		Where("review_id = ?", reviewID).
+		Where("user_id NOT IN (?)", sub).
+		Count(&total)
+
+	var list []models.Reply
+	err := database.DB.
+		Where("review_id = ?", reviewID).
+		Where("user_id NOT IN (?)", sub).
+		Order("created_at desc").
+		Scopes(utils.Paginate(page, pageSize)).
+		Find(&list).Error
+	return list, total, err
 }

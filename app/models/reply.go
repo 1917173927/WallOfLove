@@ -4,7 +4,7 @@ import (
 	"time"
 )
 
-type Review2 struct {
+type Reply struct {
 	ID        uint64    `json:"id" gorm:"primaryKey"`
 	ReviewID  uint64    `json:"review_id"`
 	UserID    uint64    `json:"user_id"`

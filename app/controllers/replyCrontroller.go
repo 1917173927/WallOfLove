@@ -8,14 +8,14 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type Review2Data struct {
+type ReplyData struct {
 	UserID    uint64    `json:"user_id"`
 	ReviewID  uint64    `json:"review_id"`
 	Content   string    `json:"content"`
 }
 //创建回复
-func CreateReview2(c *gin.Context) {
-	var req Review2Data
+func CreateReply(c *gin.Context) {
+	var req ReplyData
 	uid, _ := c.Get("userID")
 	UID := uid.(uint64)
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -32,7 +32,7 @@ func CreateReview2(c *gin.Context) {
 		return
 	}
 
-	if err := services.CreateReview2(&models.Review2{
+	if err := services.CreateReply(&models.Reply{
 		UserID:  UID,
 		ReviewID:  req.ReviewID,
 		Content: req.Content,
@@ -41,4 +41,36 @@ func CreateReview2(c *gin.Context) {
 		return
 	}
 	utils.JsonSuccessResponse(c, req)
+}
+
+
+type GetReplyData struct {
+	ReviewID uint64 `json:"review_id"`
+	Page     int    `json:"page"`
+}
+func GetRepliesByReviewID(c *gin.Context) {
+	const pageSize = 10 
+	var req GetReplyData
+	uid, _ := c.Get("userID")
+	UID := uid.(uint64)
+	err := c.ShouldBindJSON(&req)
+	if err != nil {
+		apiException.AbortWithException(c, apiException.ParamError, err)
+		return
+	}
+	if req.Page <= 0 {
+		req.Page = 1
+	}
+	list, total, err := services.GetRepliesByReviewID(req.ReviewID, UID, req.Page, pageSize)
+	if err != nil {
+		apiException.AbortWithException(c, apiException.TargetError, err)
+		return
+	}
+
+	data := map[string]any{
+		"replies": list,
+		"total":   total,
+	}
+
+	utils.JsonSuccessResponse(c, data)
 }

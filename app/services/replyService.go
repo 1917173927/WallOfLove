@@ -6,6 +6,6 @@ import (
 )
 
 //创建回复
-func CreateReview2(review2 *models.Review2) error {
-	return database.DB.Create(review2).Error
+func CreateReply(reply *models.Reply) error {
+	return database.DB.Create(reply).Error
 }

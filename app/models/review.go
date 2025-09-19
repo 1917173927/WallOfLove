@@ -10,5 +10,5 @@ type Review struct {
 	PostID    uint64      `json:"post_id"`
 	Content   string      `json:"content"`
 	CreatedAt time.Time   `json:"created_at"`
-	Review2s  []Review2   `json:"review2s" gorm:"foreignKey:ReviewID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
+	Replies  []Reply   `json:"replies" gorm:"foreignKey:ReviewID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
 }

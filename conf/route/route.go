@@ -8,7 +8,7 @@ import (
 
 func Init(r *gin.Engine) {
 	r.MaxMultipartMemory = 64 << 20 // 64MB
-    r.Static("/images", "./images")
+	r.Static("/images", "./images")
 	// 全局前缀
 	api := r.Group("/api")
 	{
@@ -28,7 +28,8 @@ func Init(r *gin.Engine) {
 
 			auth.POST("/review", controllers.CreateReview)
 			auth.GET("/review", controllers.GetReviewsByPostID)
-			auth.POST("/review2", controllers.CreateReview2)
+			auth.POST("/reply", controllers.CreateReply)
+			auth.GET("/reply", controllers.GetRepliesByReviewID)
 
 			auth.POST("/blacklist", controllers.BlackUser)
 			auth.DELETE("/blacklist", controllers.UnblackUser)

@@ -5,7 +5,6 @@ import (
 	"github.com/1917173927/WallOfLove/app/utils"
 	"github.com/1917173927/WallOfLove/conf/database"
 	"golang.org/x/crypto/bcrypt"
-	"gorm.io/gorm"
 )
 
 //检查用户名是否已存在
@@ -52,20 +51,10 @@ func GetUserDataByID(userID uint64) (*models.User, error) {
 	return &user, nil
 }
 //更新用户信息
-func UpdateProfile(user *models.User, oldVersion uint) error {
-	tx := database.DB.Model(&models.User{}).
-		Where("id = ? AND version = ?", user.ID, oldVersion).
-		Updates(map[string]any{
-			"nickname":        user.Nickname,
-			"username":        user.Username,
-			"password":        user.Password,
-			"avatar_path":     user.AvatarPath,
-			"version":         gorm.Expr("version + 1"),
-		})
-	if tx.RowsAffected == 0 {
-		return gorm.ErrRecordNotFound
-	}
-	return tx.Error
+func UpdateProfile(user *models.User) error {
+	return database.DB.Model(user).
+		Select("nickname", "username", "password", "avatar_path").
+		Updates(user).Error
 }
 //拉黑用户
 func BlackUser(userID, blockedID uint64) error {

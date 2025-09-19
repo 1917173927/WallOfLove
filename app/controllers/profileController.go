@@ -1,13 +1,12 @@
 package controllers
 
 import (
-	"errors"
 
 	"github.com/1917173927/WallOfLove/app/apiException"
 	"github.com/1917173927/WallOfLove/app/models"
 	"github.com/1917173927/WallOfLove/app/services"
+	"github.com/1917173927/WallOfLove/app/utils"
 	"github.com/gin-gonic/gin"
-	"gorm.io/gorm"
 )
 
 type updateProfileData struct {
@@ -68,18 +67,12 @@ func UpdateProfile(c *gin.Context) {
 		Username:      req.Username,
 		Password:      req.Password,
 		AvatarPath:    req.AvatarPath,
-		Version:       user.Version,
 	}
-	//更新用户信息，乐观锁
-	err = services.UpdateProfile(&updatedUser, user.Version)
+	//更新用户信息
+	err = services.UpdateProfile(&updatedUser)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			apiException.AbortWithException(c,apiException.ConflictError,err)
-		} else {
 			apiException.AbortWithException(c,apiException.ServerError,err)
+			return
 		}
-		return
-	}
-
-	c.JSON(200, map[string]any{"version": user.Version + 1})
+    utils.JsonSuccessResponse(c,nil)
 }

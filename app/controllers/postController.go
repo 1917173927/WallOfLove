@@ -1,14 +1,11 @@
 package controllers
 
 import (
-	"errors"
-
 	"github.com/1917173927/WallOfLove/app/apiException"
 	"github.com/1917173927/WallOfLove/app/models"
 	"github.com/1917173927/WallOfLove/app/services"
 	"github.com/1917173927/WallOfLove/app/utils"
 	"github.com/gin-gonic/gin"
-	"gorm.io/gorm"
 )
 
 // 创建帖子
@@ -103,24 +100,19 @@ func UpdatePost(c *gin.Context) {
 		Content:       req.Content,
 		Anonymous:     anonymous,
 		Visibility:    visibility,
-		Version:       post.Version,
 		UserNickname:  post.UserNickname,
 		AvatarPath:    post.AvatarPath,
 	}
-	//更新表白信息，乐观锁
-	err = services.UpdatePost(&updatedPost, post.Version)
+	//更新表白信息
+	err = services.UpdatePost(&updatedPost)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			apiException.AbortWithException(c,apiException.ConflictError,err)
-			return
-		} else {
 			apiException.AbortWithException(c,apiException.ServerError,err)
+			return
 		}
-		return
+		utils.JsonSuccessResponse(c, nil)
 	}
 
-	c.JSON(200, map[string]any{"version": post.Version + 1})
-}
+
 
 // 删除帖子
 type DeletePostData struct {

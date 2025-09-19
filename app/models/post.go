@@ -12,6 +12,5 @@ type Post struct {
     AvatarPath   string     `json:"avatar_path"`
     CreatedAt    time.Time  `json:"created_at"`
     UpdatedAt    time.Time  `json:"updated_at"`
-    Version      uint       `grom:"default:1" json:"version"`
     Images     []Image      `json:"images,omitempty" gorm:"foreignKey:PostID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
 }

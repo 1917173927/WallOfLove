@@ -4,7 +4,6 @@ import (
 	"github.com/1917173927/WallOfLove/app/models"
 	"github.com/1917173927/WallOfLove/app/utils"
 	"github.com/1917173927/WallOfLove/conf/database"
-	"gorm.io/gorm"
 )
 
 // 创建帖子
@@ -21,19 +20,10 @@ func GetPostDataByID(postID uint64) (*models.Post, error) {
 	}
 	return &post, nil
 }
-func UpdatePost(post *models.Post, oldVersion uint) error {
-	tx := database.DB.Model(&models.Post{}).
-		Where("id = ? AND version = ?", post.ID, oldVersion).
-		Updates(map[string]any{
-			"content":    post.Content,
-			"anonymous":  post.Anonymous,
-			"visibility": post.Visibility,
-			"version":    gorm.Expr("version + 1"),
-		})
-	if tx.RowsAffected == 0 {
-		return gorm.ErrRecordNotFound
-	}
-	return tx.Error
+func UpdatePost(post *models.Post) error {
+	return database.DB.Model(post).
+		Select("content", "anonymous", "visibility").
+		Updates(post).Error
 }
 
 func DeletePost(postID uint64) error {

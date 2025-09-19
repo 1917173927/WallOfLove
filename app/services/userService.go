@@ -1,3 +1,4 @@
+// Package services 包含所有业务逻辑处理，负责与数据库交互和核心业务逻辑的实现。
 package services
 
 import (
@@ -7,12 +8,19 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-//检查用户名是否已存在
+// CheckUsername 检查用户名是否已存在，执行以下操作：
+// 1. 查询数据库中是否存在指定用户名的记录
+// 2. 返回查询结果或错误
 func CheckUsername(username string) error {
 	result := database.DB.Where("username=?", username).First(&models.User{})
 	return result.Error
 }
-//根据username获取用户信息
+
+// GetUser 根据用户名获取用户信息，执行以下操作：
+// 1. 查询数据库中指定用户名的记录
+// 2. 返回用户信息或错误
+
+// 2. 返回用户信息或错误
 func GetUser(username string) (*models.User, error) {
 	var user models.User
 	result := database.DB.Where("username=?", username).First(&user)

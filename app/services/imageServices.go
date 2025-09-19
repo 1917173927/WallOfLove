@@ -1,3 +1,4 @@
+// Package services 包含所有业务逻辑处理，负责与数据库交互和核心业务逻辑的实现。
 package services
 
 import (
@@ -17,7 +18,18 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-//上传图片
+// UploadImage 处理图片上传的核心逻辑，包括以下步骤：
+// 1. 验证文件类型和大小
+// 2. 生成唯一的文件名并保存到指定目录
+// 3. 将图片信息保存到数据库
+// 4. 返回图片的访问路径或错误信息
+
+// UploadImage 处理图片上传逻辑，执行以下操作：
+// 1. 验证文件类型和大小
+// 2. 生成唯一的文件名
+// 3. 保存文件到指定目录
+// 4. 记录文件信息到数据库
+// 5. 返回文件信息或错误
 func UploadImage(c *gin.Context, userID uint64, username string, postID string, isAvatar string, file *multipart.FileHeader) (*models.Image, error) {
 	// 检查图片大小
 	maxSize := config.Config.GetInt64("image.max_size")

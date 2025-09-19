@@ -1,3 +1,4 @@
+// Package controllers 包含所有 HTTP 请求处理逻辑，负责接收请求并调用服务层处理业务逻辑。
 package controllers
 
 import (
@@ -10,7 +11,12 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// UploadImage 处理图片上传
+// UploadImage 处理图片上传请求，执行以下操作：
+// 1. 从请求上下文中获取用户 ID 和表单字段（post_id 和 is_avatar）
+// 2. 获取上传的文件并验证其有效性
+// 3. 根据用户 ID 查询用户名
+// 4. 调用服务层上传图片，并处理可能的错误（如文件大小超限、文件类型无效等）
+// 5. 返回上传成功的响应
 func UploadImage(c *gin.Context) {
 	uid, _ := c.Get("userID")
 	UID := uid.(uint64)

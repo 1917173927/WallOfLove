@@ -4,6 +4,7 @@ package main
 import (
 	"github.com/1917173927/WallOfLove/app/middleware"
 	"github.com/1917173927/WallOfLove/app/validator"
+	"github.com/1917173927/WallOfLove/app/services"
 	"github.com/1917173927/WallOfLove/conf/database"
 	"github.com/1917173927/WallOfLove/conf/route"
 	"github.com/gin-gonic/gin"
@@ -18,6 +19,7 @@ import (
 func main() {
 	database.Init()  // 初始化数据库连接
     validator.Init() // 初始化验证器
+    services.StartScheduler() // 启动定时任务服务
 
 	r := gin.Default() // 创建 Gin 引擎实例
 	r.Use(middleware.ErrHandler()) // 注册全局错误处理中间件

@@ -30,9 +30,12 @@ func GetVisibleReviews(reviewID uint64,userID uint64, page, pageSize int) ([]mod
 		Count(&total)
 
 	var list []models.Review
-	err := database.DB.Preload("Replies", func(db *gorm.DB) *gorm.DB {
-		return db.Order("created_at DESC").Limit(2)
-	}).
+	err := database.DB.Table("review").
+		Select(`review.*,(SELECT COUNT(*) FROM likes WHERE likes.review_id = review.id) AS like_count,
+		                  EXISTS(SELECT 1 FROM likes WHERE likes.review_id = review.id AND likes.user_id = ?) AS liked_by_me`,userID).
+	    Preload("Replies", func(db *gorm.DB) *gorm.DB {
+		    return db.Order("created_at DESC").Limit(2)
+	    }).
 		Where("id = ?", reviewID).
 		Where("user_id NOT IN (?)", sub).
 		Order("created_at desc").

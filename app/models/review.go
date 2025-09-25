@@ -12,5 +12,7 @@ type Review struct {
 	PostID    uint64      `json:"post_id"`             // 关联的帖子ID
 	Content   string      `json:"content"`             // 评论内容
 	CreatedAt time.Time   `json:"created_at"`          // 评论创建时间
-	Replies  []Reply   `json:"replies" gorm:"foreignKey:ReviewID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"` // 关联的回复列表
+	Replies  []Reply      `json:"replies" gorm:"foreignKey:ReviewID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"` // 关联的回复列表
+	LikeCount int64       `json:"like_count"  gorm:"-"`
+	LikedByMe bool        `json:"liked_by_me" gorm:"-"`
 }

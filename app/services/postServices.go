@@ -31,7 +31,7 @@ func DeletePost(postID uint64) error {
 }
 
 //获取未被拉黑的其他人发布的表白
-func GetVisiblePosts(userID uint64, page, pageSize int) ([]models.Post, int64, error) {
+func GetVisiblePosts(userID uint64, page, pageSize int) ([]models.Post, int64,error) {
 	sub, _ := utils.GetBlackListIDs(userID)
 	var total int64
 	database.DB.Model(&models.Post{}).
@@ -40,12 +40,14 @@ func GetVisiblePosts(userID uint64, page, pageSize int) ([]models.Post, int64, e
 		Count(&total)
 
 	var list []models.Post
-	err := database.DB.Preload("Images").
+	err := database.DB.Table("posts").
+		Select(`posts.*,(SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id AND likes.review_id = 0) AS like_count,
+		                 EXISTS(SELECT 1 FROM likes WHERE likes.post_id = posts.id AND likes.review_id = 0 AND likes.user_id = ?) AS liked_by_me`,userID).//查询帖子的点赞数以及该用户是否点赞过该帖子
+		Preload("Images").//图片预加载
 		Where("visibility = ?", true).
 		Where("user_id NOT IN (?)", sub).
 		Order("created_at desc").
 		Scopes(utils.Paginate(page, pageSize)).
-		Find(&list).Error
-
+		Scan(&list).Error
 	return list, total, err
 }

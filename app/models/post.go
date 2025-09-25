@@ -15,4 +15,6 @@ type Post struct {
     CreatedAt    time.Time  `json:"created_at"`         // 帖子创建时间
     UpdatedAt    time.Time  `json:"updated_at"`         // 帖子最后更新时间
     Images     []Image      `json:"images,omitempty" gorm:"foreignKey:PostID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"` // 关联的图片列表
+    LikeCount    int64      `json:"like_count"  gorm:"-"`
+	LikedByMe    bool       `json:"liked_by_me" gorm:"-"`
 }

@@ -27,7 +27,7 @@ type ReviewWithLike struct {
 	LikeCount int64 `json:"like_count"`
 	LikedByMe bool  `json:"liked_by_me"`
 }
-func GetVisibleReviews(reviewID uint64,userID uint64, page, pageSize int) ([]ReviewWithLike, int64, error) {
+func GetVisibleReviews(postID uint64,userID uint64, page, pageSize int) ([]ReviewWithLike, int64, error) {
 	sub, _ := utils.GetBlackListIDs(userID)
 	var total int64
 	database.DB.Model(&models.Review{}).
@@ -36,16 +36,16 @@ func GetVisibleReviews(reviewID uint64,userID uint64, page, pageSize int) ([]Rev
 
 	var list []ReviewWithLike
 	err := database.DB.Table("reviews").
-		Select(`reviews.*,(SELECT COUNT(*) FROM likes WHERE likes.review_id = review.id) AS like_count,
-		                   EXISTS(SELECT 1 FROM likes WHERE likes.review_id = review.id AND likes.user_id = ?) AS liked_by_me`,userID).
+		 Select(`reviews.*,(SELECT COUNT(*) FROM likes WHERE likes.review_id = reviews.id) AS like_count,
+		                    EXISTS(SELECT 1 FROM likes WHERE likes.review_id = reviews.id AND likes.user_id = ?) AS liked_by_me`,userID).
 	    Preload("Replies", func(db *gorm.DB) *gorm.DB {
 		    return db.Order("created_at DESC").Limit(2)
 	    }).
-		Where("id = ?", reviewID).
+		Where("post_id = ?", postID).
 		Where("user_id NOT IN (?)", sub).
 		Order("created_at desc").
 		Scopes(utils.Paginate(page, pageSize)).
-		Find(&list).Error
+		Scan(&list).Error
 	
 	for i := range list {
 		filterReplies(&list[i], sub)

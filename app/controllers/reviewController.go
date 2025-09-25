@@ -47,16 +47,16 @@ func CreateReview(c *gin.Context) {
 }
 
 type GetReviewsByPostIDData struct {
-	PostID uint64 `json:"post_id"`
-	Page int `json:"page"`
-	PageSize int `json:"page_size"`
+	PostID uint64 `form:"post_id"`
+	Page int `form:"page"`
+	PageSize int `form:"page_size"`
 }
 
 func GetReviewsByPostID(c *gin.Context) {
 	var req GetReviewsByPostIDData
 	uid, _ := c.Get("userID")
 	UID := uid.(uint64)
-	err := c.ShouldBindJSON(&req)
+	err := c.ShouldBind(&req)
 	if err != nil {
 		apiException.AbortWithException(c,apiException.ParamError,err)
 		return

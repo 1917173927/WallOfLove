@@ -45,15 +45,15 @@ func CreateReply(c *gin.Context) {
 
 
 type GetReplyData struct {
-	ReviewID uint64 `json:"review_id"`
-	Page     int    `json:"page"`
+	ReviewID uint64 `form:"review_id"`
+	Page     int    `form:"page"`
 }
 func GetRepliesByReviewID(c *gin.Context) {
 	const pageSize = 10 
 	var req GetReplyData
 	uid, _ := c.Get("userID")
 	UID := uid.(uint64)
-	err := c.ShouldBindJSON(&req)
+	err := c.ShouldBind(&req)
 	if err != nil {
 		apiException.AbortWithException(c, apiException.ParamError, err)
 		return

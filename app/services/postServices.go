@@ -33,9 +33,13 @@ func UpdatePost(post *models.Post) error {
 func DeletePost(postID uint64) error {
 	return database.DB.Delete(&models.Post{}, "id = ?", postID).Error
 }
-
 //获取未被拉黑的其他人发布的表白
-func GetVisiblePosts(userID uint64, page, pageSize int) ([]models.Post, int64,error) {
+type PostWithLike struct {
+	models.Post
+	LikeCount int64 `json:"like_count"`
+	LikedByMe bool  `json:"liked_by_me"`
+}
+func GetVisiblePosts(userID uint64, page, pageSize int) ([]PostWithLike, int64,error) {
 	sub, _ := utils.GetBlackListIDs(userID)
 	var total int64
 	database.DB.Model(&models.Post{}).
@@ -43,7 +47,7 @@ func GetVisiblePosts(userID uint64, page, pageSize int) ([]models.Post, int64,er
 		Where("user_id NOT IN (?)", sub).
 		Count(&total)
 
-	var list []models.Post
+	var list []PostWithLike
 	err := database.DB.Table("posts").
 		Select(`posts.*,(SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id AND likes.review_id = 0) AS like_count,
 		                 EXISTS(SELECT 1 FROM likes WHERE likes.post_id = posts.id AND likes.review_id = 0 AND likes.user_id = ?) AS liked_by_me`,userID).//查询帖子的点赞数以及该用户是否点赞过该帖子

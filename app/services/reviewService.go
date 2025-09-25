@@ -22,17 +22,22 @@ func GetReviewByReviewID(ReviewID uint64) error {
 	return database.DB.Where("id = ?", ReviewID).First(&reviews).Error
 }
 //获取未被拉黑的其他人发布的评论,现在是获得所有评论and每条评论的前两条回复
-func GetVisibleReviews(reviewID uint64,userID uint64, page, pageSize int) ([]models.Review, int64, error) {
+type ReviewWithLike struct {
+	models.Review
+	LikeCount int64 `json:"like_count"`
+	LikedByMe bool  `json:"liked_by_me"`
+}
+func GetVisibleReviews(reviewID uint64,userID uint64, page, pageSize int) ([]ReviewWithLike, int64, error) {
 	sub, _ := utils.GetBlackListIDs(userID)
 	var total int64
 	database.DB.Model(&models.Review{}).
 		Where("user_id NOT IN (?)", sub).
 		Count(&total)
 
-	var list []models.Review
-	err := database.DB.Table("review").
-		Select(`review.*,(SELECT COUNT(*) FROM likes WHERE likes.review_id = review.id) AS like_count,
-		                  EXISTS(SELECT 1 FROM likes WHERE likes.review_id = review.id AND likes.user_id = ?) AS liked_by_me`,userID).
+	var list []ReviewWithLike
+	err := database.DB.Table("reviews").
+		Select(`reviews.*,(SELECT COUNT(*) FROM likes WHERE likes.review_id = review.id) AS like_count,
+		                   EXISTS(SELECT 1 FROM likes WHERE likes.review_id = review.id AND likes.user_id = ?) AS liked_by_me`,userID).
 	    Preload("Replies", func(db *gorm.DB) *gorm.DB {
 		    return db.Order("created_at DESC").Limit(2)
 	    }).
@@ -48,7 +53,7 @@ func GetVisibleReviews(reviewID uint64,userID uint64, page, pageSize int) ([]mod
 	return list, total, err
 }
 //过滤被拉黑人的回复
-func filterReplies(review *models.Review, blackList []uint64) {
+func filterReplies(review *ReviewWithLike, blackList []uint64) {
 	if len(review.Replies) == 0 || len(blackList) == 0 {
 		return
 	}

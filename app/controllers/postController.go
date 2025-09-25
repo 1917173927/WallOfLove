@@ -157,7 +157,7 @@ type PageData struct {
 	PageNum  int `form:"page_num"`
 }
 type postWithPaths struct {
-	models.Post              
+	Post        services.PostWithLike             
 	ImagePaths  []string      `json:"image_paths"` 
 }
 

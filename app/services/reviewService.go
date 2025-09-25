@@ -62,21 +62,3 @@ func filterReplies(review *models.Review, blackList []uint64) {
 	review.Replies = filtered
 }
 
-func GetRepliesByReviewID(reviewID uint64,userID uint64,page int,pageSize int) ([]models.Reply,int64, error) {
-	sub, _ := utils.GetBlackListIDs(userID)
-	var total int64
-
-	database.DB.Model(&models.Reply{}).
-		Where("review_id = ?", reviewID).
-		Where("user_id NOT IN (?)", sub).
-		Count(&total)
-
-	var list []models.Reply
-	err := database.DB.
-		Where("review_id = ?", reviewID).
-		Where("user_id NOT IN (?)", sub).
-		Order("created_at desc").
-		Scopes(utils.Paginate(page, pageSize)).
-		Find(&list).Error
-	return list, total, err
-}

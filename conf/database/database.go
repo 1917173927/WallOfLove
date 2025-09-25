@@ -47,7 +47,7 @@ func Init() {
 	// 执行自动迁移，确保数据库表结构与模型定义一致
 	err = db.WithContext(context.Background()).
 		Session(&gorm.Session{NewDB: true}).
-		AutoMigrate(&models.User{}, &models.Post{}, &models.Image{}, &models.Blacklist{}, &models.Review{}, &models.Reply{})
+		AutoMigrate(&models.User{}, &models.Post{}, &models.Image{}, &models.Blacklist{}, &models.Review{}, &models.Reply{},&models.Like{})
 	if err != nil {
 		_ = tx.Rollback()
 		log.Fatal("自动迁移失败:", err)

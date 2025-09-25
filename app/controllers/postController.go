@@ -153,8 +153,8 @@ func DeletePost(c *gin.Context) {
 
 //获取未被拉黑的其他人发布的表白
 type PageData struct {
-	PageSize int `json:"page_size"`
-	PageNum  int `json:"page_num"`
+	PageSize int `form:"page_size"`
+	PageNum  int `form:"page_num"`
 }
 type postWithPaths struct {
 	models.Post              
@@ -165,7 +165,7 @@ func GetVisiblePosts(c *gin.Context) {
 	uid, _ := c.Get("userID")
 	UID := uid.(uint64)
 	var req PageData
-	err := c.ShouldBindJSON(&req)
+	err := c.ShouldBind(&req)
 	if err != nil {
 		apiException.AbortWithException(c,apiException.ParamError,err)
 		return

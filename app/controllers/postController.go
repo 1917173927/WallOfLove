@@ -1,6 +1,8 @@
 package controllers
 
 import (
+	"time"
+
 	"github.com/1917173927/WallOfLove/app/apiException"
 	"github.com/1917173927/WallOfLove/app/models"
 	"github.com/1917173927/WallOfLove/app/services"
@@ -10,13 +12,15 @@ import (
 
 // 创建帖子
 type PostData struct {
-	Content    string `json:"content" binding:"required"`
-	Anonymous  bool   `json:"anonymous"`
-	Visibility bool   `json:"visibility"`
+	Content      string     `json:"content" binding:"required"`
+	Anonymous    bool       `json:"anonymous"`
+	Visibility    bool       `json:"visibility"`
+	ScheduledAt  *time.Time `json:"scheduled_at"`
 }
 
 func CreatePost(c *gin.Context) {
 	var req PostData
+	
 	uid, _ := c.Get("userID")
 	UID := uid.(uint64)
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -39,6 +43,7 @@ func CreatePost(c *gin.Context) {
 		Visibility:    req.Visibility,
 		UserNickname:  user.Nickname,
 		AvatarPath:    user.AvatarPath,
+		ScheduledAt:   req.ScheduledAt,
 	}); err != nil {
 		apiException.AbortWithException(c,apiException.ServerError,err)
 		return

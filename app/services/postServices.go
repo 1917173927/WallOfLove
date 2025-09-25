@@ -8,6 +8,10 @@ import (
 
 // 创建帖子
 func CreatePost(post *models.Post) error {
+	// 如果未设置发布时间，则立即发布
+	if post.ScheduledAt == nil {
+		post.IsPublished = true
+	}
 	return database.DB.Create(post).Error
 }
 func GetPostDataByID(postID uint64) (*models.Post, error) {
@@ -51,3 +55,4 @@ func GetVisiblePosts(userID uint64, page, pageSize int) ([]models.Post, int64,er
 		Scan(&list).Error
 	return list, total, err
 }
+

@@ -48,6 +48,10 @@ type GetReplyData struct {
 	ReviewID uint64 `form:"review_id"`
 	Page     int    `form:"page"`
 }
+type ReplyList struct {
+	Replies []models.Reply `json:"replies"`
+	Total   int64          `json:"total"`
+}
 func GetRepliesByReviewID(c *gin.Context) {
 	const pageSize = 10 
 	var req GetReplyData
@@ -67,9 +71,9 @@ func GetRepliesByReviewID(c *gin.Context) {
 		return
 	}
 
-	data := map[string]any{
-		"replies": list,
-		"total":   total,
+	data := ReplyList{
+		Replies: list,
+		Total:   total,
 	}
 
 	utils.JsonSuccessResponse(c, data)

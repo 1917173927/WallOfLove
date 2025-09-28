@@ -156,9 +156,10 @@ type PageData struct {
 	PageSize int `form:"page_size"`
 	PageNum  int `form:"page_num"`
 }
-type postWithPaths struct {
+type PostWithPaths struct {
 	Post        services.PostWithLike             
 	ImagePaths  []string      `json:"image_paths"` 
+	Total       int64         `json:"total"`
 }
 
 func GetVisiblePosts(c *gin.Context) {
@@ -184,20 +185,17 @@ func GetVisiblePosts(c *gin.Context) {
 		}
 	}
 	// 拼图片路径
-    out := make([]postWithPaths, 0, len(posts))
+    out := make([]PostWithPaths, 0, len(posts))
     for _, p := range posts {
 	    paths := make([]string, 0, len(p.Images))
 	    for _, img := range p.Images {
 		    paths = append(paths, img.FilePath) // 只拿路径
 	    }
-	    out = append(out, postWithPaths{
+	    out = append(out, PostWithPaths{
 		    Post:       p,
 		    ImagePaths: paths,
+			Total:      total,
 	    })
 }
-	data := map[string]any{
-		"posts": out,
-		"total": total,
-	}
-	utils.JsonSuccessResponse(c, data)
+	utils.JsonSuccessResponse(c, out)
 }

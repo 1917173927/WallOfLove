@@ -51,7 +51,10 @@ type GetReviewsByPostIDData struct {
 	Page int `form:"page"`
 	PageSize int `form:"page_size"`
 }
-
+type ReviewList struct {
+	Reviews []services.ReviewWithLike `json:"reviews"`
+	Total   int64                     `json:"total"`
+}
 func GetReviewsByPostID(c *gin.Context) {
 	var req GetReviewsByPostIDData
 	uid, _ := c.Get("userID")
@@ -71,9 +74,9 @@ func GetReviewsByPostID(c *gin.Context) {
 		apiException.AbortWithException(c,apiException.ServerError,err)
 		return
 	}
-	data := map[string]any{
-		"reviews": reviews,
-		"total": total,
+	data := ReviewList{
+		Reviews: reviews,
+		Total:   total,
 	}
 	utils.JsonSuccessResponse(c, data)
 }

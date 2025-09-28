@@ -29,12 +29,14 @@ func GetUser(username string) (*models.User, error) {
 	}
 	return &user, nil
 }
-//注册用户
+
+// 注册用户
 func Register(user models.User) error {
 	result := database.DB.Create(&user)
 	return result.Error
 }
-//密码加密
+
+// 密码加密
 func HashPassword(password string) (string, error) {
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
@@ -42,12 +44,14 @@ func HashPassword(password string) (string, error) {
 	}
 	return string(hash), nil
 }
-//密码比对
+
+// 密码比对
 func CompareHash(password, hash string) error {
 	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
 	return err
 }
-//根据ID获取用户信息
+
+// 根据ID获取用户信息
 func GetUserDataByID(userID uint64) (*models.User, error) {
 	var user models.User
 	result := database.DB.
@@ -58,26 +62,31 @@ func GetUserDataByID(userID uint64) (*models.User, error) {
 	}
 	return &user, nil
 }
-//更新用户信息
+
+// 更新用户信息
 func UpdateProfile(user *models.User) error {
 	return database.DB.Model(user).
 		Select("nickname", "username", "password", "avatar_path").
 		Updates(user).Error
 }
-//拉黑用户
+
+// 拉黑用户
 func BlackUser(userID, blockedID uint64) error {
 	return database.DB.Create(&models.Blacklist{UserID: userID, BlockedID: blockedID}).Error
 }
-//取消拉黑用户
+
+// 取消拉黑用户
 func UnblackUser(userID, blockedID uint64) error {
 	return database.DB.Where("user_id = ? AND blocked_id = ?", userID, blockedID).Delete(&models.Blacklist{}).Error
 }
-//获取拉黑用户信息列表
+
+// 获取拉黑用户信息列表
 type BlackedUser struct {
-	UserID   uint64  `json:"user_id"`
-	Username string  `json:"username"`
-	Nickname string  `json:"nickname"`
+	UserID   uint64 `json:"user_id"`
+	Username string `json:"username"`
+	Nickname string `json:"nickname"`
 }
+
 func GetBlackedUsers(userID uint64) ([]BlackedUser, error) {
 	// 拿被拉黑人ID 列表
 	ids, err := utils.GetBlackListIDs(userID)

@@ -20,6 +20,7 @@ func Init(r *gin.Engine) {
 		auth.Use(middleware.JWT())
 		{
 			auth.PUT("/user", controllers.UpdateProfile)
+			auth.GET("/profile", controllers.GetProfile)
 
 			auth.POST("/post", controllers.CreatePost)
 			auth.PUT("/post", controllers.UpdatePost)

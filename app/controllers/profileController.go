@@ -76,3 +76,15 @@ func UpdateProfile(c *gin.Context) {
 		}
     utils.JsonSuccessResponse(c,nil)
 }
+
+//获取用户信息
+func GetProfile(c *gin.Context) {
+	uid, _ := c.Get("userID")
+	UID := uid.(uint64)
+	user, err := services.GetUserDataByID(UID)
+	if err != nil {
+		apiException.AbortWithException(c,apiException.ServerError,err)
+		return
+	}
+	utils.JsonSuccessResponse(c, user)
+}

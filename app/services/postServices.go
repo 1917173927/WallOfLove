@@ -4,6 +4,7 @@ import (
 	"github.com/1917173927/WallOfLove/app/models"
 	"github.com/1917173927/WallOfLove/app/utils"
 	"github.com/1917173927/WallOfLove/conf/database"
+	"github.com/1917173927/WallOfLove/conf/redis"
 )
 
 // 创建帖子
@@ -39,24 +40,42 @@ type PostWithLike struct {
 	LikeCount int64 `json:"like_count"`
 	LikedByMe bool  `json:"liked_by_me"`
 }
-func GetVisiblePosts(userID uint64, page, pageSize int) ([]PostWithLike, int64,error) {
+func GetVisiblePosts(userID uint64, page, pageSize int) ([]PostWithLike, int64, error) {
 	sub, _ := utils.GetBlackListIDs(userID)
+
+	//总条数
 	var total int64
 	database.DB.Model(&models.Post{}).
 		Where("visibility = ?", true).
 		Where("user_id NOT IN (?)", sub).
 		Count(&total)
 
-	var list []PostWithLike
-	err := database.DB.Table("posts").
-		Select(`posts.*,(SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id AND likes.review_id = 0) AS like_count,
-		                 EXISTS(SELECT 1 FROM likes WHERE likes.post_id = posts.id AND likes.review_id = 0 AND likes.user_id = ?) AS liked_by_me`,userID).//查询帖子的点赞数以及该用户是否点赞过该帖子
-		Preload("Images").//图片预加载
+	//拿帖子
+	var posts []models.Post
+	err := database.DB.
+		Preload("Images").
 		Where("visibility = ?", true).
 		Where("user_id NOT IN (?)", sub).
 		Order("created_at desc").
 		Scopes(utils.Paginate(page, pageSize)).
-		Scan(&list).Error
-	return list, total, err
+		Find(&posts).Error
+	if err != nil {
+		return nil, 0, err
+	}
+
+	//点赞数 + 是否已赞（redis）
+	list := make([]PostWithLike, 0, len(posts))
+	for _, p := range posts {
+		likeCount := redis.GetPostLikeCount(p.ID, 0)     // 帖子点赞 reviewID=0
+		likedByMe := redis.IsUserLiked(p.ID, userID, 0) // 当前用户是否点赞
+
+		list = append(list, PostWithLike{
+			Post:      p,
+			LikeCount: likeCount,
+			LikedByMe: likedByMe,
+		})
+	}
+
+	return list, total, nil
 }
 

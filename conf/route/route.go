@@ -38,7 +38,6 @@ func Init(r *gin.Engine) {
 			auth.POST("/uploadimage", controllers.UploadImage)
 
 			auth.POST("/like", controllers.LikePost)
-			auth.DELETE("/like", controllers.UnlikePost)
 		}
 	}
 }

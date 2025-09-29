@@ -1,0 +1,83 @@
+package redis
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/1917173927/WallOfLove/app/models"
+	"github.com/1917173927/WallOfLove/conf/database"
+	"github.com/redis/go-redis/v9"
+)
+
+var (
+	Ctx = context.Background()
+	Rdb *redis.Client
+)
+
+func Init() {
+	Rdb = redis.NewClient(&redis.Options{
+		Addr:     "localhost:6379",
+		Password: "",
+		DB:       0,
+	})
+	if err := Rdb.Ping(Ctx).Err(); err != nil {
+		panic(err)
+	}
+}
+// 点赞数 +1 并返回最新值
+func IncrPostLike(postID, reviewID uint64) int64 {
+	count, _ := Rdb.Incr(Ctx, fmt.Sprintf("post:%d:review:%d:likes", postID, reviewID)).Result()
+	return count
+}
+
+// 点赞数 -1 并返回最新值
+func DecrPostLike(postID, reviewID uint64) int64 {
+	count, _ := Rdb.Decr(Ctx, fmt.Sprintf("post:%d:review:%d:likes", postID, reviewID)).Result()
+	return count
+}
+
+// 标记用户已赞
+func SetUserLiked(postID, userID, reviewID uint64) {
+	Rdb.Set(Ctx, fmt.Sprintf("post:%d:review:%d:liked:uid:%d", postID, reviewID, userID), 1, 0)
+}
+
+// 取消已赞标记
+func DelUserLiked(postID, userID, reviewID uint64) {
+	Rdb.Del(Ctx, fmt.Sprintf("post:%d:review:%d:liked:uid:%d", postID, reviewID, userID))
+}
+
+// 读点赞数（缓存）
+func GetPostLikeCount(postID,reviewID uint64) int64 {
+	key := fmt.Sprintf("post:%d:review:%d:likes", postID,reviewID)
+	//读缓存
+	if val, err := Rdb.Get(Ctx, key).Int64(); err == nil {
+		return val
+	}
+	//错误：读库
+	var cnt int64
+	database.DB.Model(&models.Like{}).Where("post_id = ? AND review_id = ?", postID,reviewID).Count(&cnt)
+	//写回缓存
+	Rdb.Set(Ctx, key, cnt, 0)
+	return cnt
+}
+
+// 读是否已赞（缓存）
+func IsUserLiked(postID, userID,reviewID uint64) bool {
+	key := fmt.Sprintf("post:%d:review:%d:liked:uid:%d", postID, userID,reviewID)
+	//读缓存
+	if val, err := Rdb.Get(Ctx, key).Result(); err == nil {
+		return val == "1"
+	}
+	//错误：读库
+	var like int64
+	database.DB.Model(&models.Like{}).
+		Where("user_id = ? AND post_id = ? AND review_id = ?", userID,reviewID,postID).
+		Count(&like)
+	//写回缓存
+	if like > 0 {
+		Rdb.Set(Ctx, key, 1, 0)
+		return true
+	}
+	Rdb.Set(Ctx, key, 0, 0)
+	return false
+}

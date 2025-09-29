@@ -6,6 +6,7 @@ import (
 	"github.com/1917173927/WallOfLove/app/models"
 	"github.com/1917173927/WallOfLove/app/utils"
 	"github.com/1917173927/WallOfLove/conf/database"
+	"github.com/1917173927/WallOfLove/conf/redis"
 	"gorm.io/gorm"
 )
 
@@ -21,39 +22,59 @@ func GetReviewByReviewID(ReviewID uint64) error {
 	var reviews []models.Review
 	return database.DB.Where("id = ?", ReviewID).First(&reviews).Error
 }
-//获取未被拉黑的其他人发布的评论,现在是获得所有评论and每条评论的前两条回复
+//获得所有评论and每条评论的前两条回复
 type ReviewWithLike struct {
 	models.Review
 	LikeCount int64 `json:"like_count"`
 	LikedByMe bool  `json:"liked_by_me"`
+	Replies []models.Reply `json:"replies"`
 }
-func GetVisibleReviews(postID uint64,userID uint64, page, pageSize int) ([]ReviewWithLike, int64, error) {
+func GetVisibleReviews(postID uint64, userID uint64, page, pageSize int) ([]ReviewWithLike, int64, error) {
 	sub, _ := utils.GetBlackListIDs(userID)
+
+	//总条数
 	var total int64
 	database.DB.Model(&models.Review{}).
+		Where("post_id = ?", postID).
 		Where("user_id NOT IN (?)", sub).
 		Count(&total)
 
-	var list []ReviewWithLike
-	err := database.DB.Table("reviews").
-		 Select(`reviews.*,(SELECT COUNT(*) FROM likes WHERE likes.review_id = reviews.id) AS like_count,
-		                    EXISTS(SELECT 1 FROM likes WHERE likes.review_id = reviews.id AND likes.user_id = ?) AS liked_by_me`,userID).
-	    Preload("Replies", func(db *gorm.DB) *gorm.DB {
-		    return db.Order("created_at DESC").Limit(2)
-	    }).
+	//只拿评论（不带点赞列）
+	var reviews []models.Review
+	err := database.DB.
+		Preload("Replies", func(db *gorm.DB) *gorm.DB {
+			return db.Order("created_at DESC").Limit(2) // 只拿 2 条回复
+		}).
 		Where("post_id = ?", postID).
 		Where("user_id NOT IN (?)", sub).
 		Order("created_at desc").
 		Scopes(utils.Paginate(page, pageSize)).
-		Scan(&list).Error
-	
-	for i := range list {
-		filterReplies(&list[i], sub)
+		Find(&reviews).Error
+	if err != nil {
+		return nil, 0, err
 	}
-	return list, total, err
+
+	//点赞数 + 是否已赞（redis）
+	list := make([]ReviewWithLike, 0, len(reviews))
+	for _, r := range reviews {
+		likeCount := redis.GetPostLikeCount(postID, r.ID)   // 评论点赞 reviewID!=0
+		likedByMe := redis.IsUserLiked(postID, userID, r.ID) // 当前用户是否点赞这条评论
+
+		// 过滤被拉黑回复
+		filterReplies(&r, sub)
+
+		list = append(list, ReviewWithLike{
+			Review:    r,
+			LikeCount: likeCount,
+			LikedByMe: likedByMe,
+			Replies:   r.Replies,
+		})
+	}
+
+	return list, total, nil
 }
 //过滤被拉黑人的回复
-func filterReplies(review *ReviewWithLike, blackList []uint64) {
+func filterReplies(review *models.Review, blackList []uint64) {
 	if len(review.Replies) == 0 || len(blackList) == 0 {
 		return
 	}

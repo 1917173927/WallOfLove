@@ -37,6 +37,8 @@ func DeletePost(postID uint64) error {
 //获取未被拉黑的其他人发布的表白
 type PostWithLike struct {
 	models.Post
+	IsFull bool `json:"is_full"` //true:超过100字，false:未超过100字
+	ShortContent string `json:"short_content"`
 	LikeCount int64 `json:"like_count"`
 	LikedByMe bool  `json:"liked_by_me"`
 	ReviewsCount int64 `json:"reviews_count"`
@@ -71,8 +73,17 @@ func GetVisiblePosts(userID uint64, page, pageSize int) ([]PostWithLike, int64, 
 		likedByMe := redis.IsUserLiked(p.ID, userID, 0) // 当前用户是否点赞
 		reviewsCount := redis.GetPostReviewCount(p.ID) // 帖子评论数
 
+		short:=p.Content
+		isFull := false
+	if len([]rune(p.Content)) > 100 {
+		short = string([]rune(p.Content)[:100]) + "..."
+		isFull = true
+	}
+
 		list = append(list, PostWithLike{
 			Post:      p,
+			IsFull: isFull,
+			ShortContent: short,
 			LikeCount: likeCount,
 			LikedByMe: likedByMe,
 			ReviewsCount: reviewsCount,
@@ -110,9 +121,18 @@ func GetPostsByUserID(userID uint64, page, pageSize int) ([]PostWithLike, int64,
 		likeCount := redis.GetPostLikeCount(p.ID, 0)     // 帖子点赞 reviewID=0
 		likedByMe := redis.IsUserLiked(p.ID, userID, 0) // 当前用户是否点赞
 		reviewsCount := redis.GetPostReviewCount(p.ID) // 帖子评论数	
+		
+		short:=p.Content
+		isFull := false
+	if len([]rune(p.Content)) > 100 {
+		short = string([]rune(p.Content)[:100]) + "..."
+		isFull = true
+	}
 
 		list = append(list, PostWithLike{
 			Post:      p,
+			IsFull: isFull,
+			ShortContent: short,
 			LikeCount: likeCount,
 			LikedByMe: likedByMe,
 			ReviewsCount: reviewsCount,
@@ -147,9 +167,18 @@ func GetMyPosts(userID uint64, page, pageSize int) ([]PostWithLike, int64, error
 		likeCount := redis.GetPostLikeCount(p.ID, 0)     // 帖子点赞 reviewID=0
 		likedByMe := redis.IsUserLiked(p.ID, userID, 0) // 当前用户是否点赞
 		reviewsCount := redis.GetPostReviewCount(p.ID) // 帖子评论数	
+		
+		short:=p.Content
+		isFull := false
+	if len([]rune(p.Content)) > 100 {
+		short = string([]rune(p.Content)[:100]) + "..."
+		isFull = true
+	}
 
 		list = append(list, PostWithLike{
 			Post:      p,
+			IsFull: isFull,
+			ShortContent: short,
 			LikeCount: likeCount,
 			LikedByMe: likedByMe,
 			ReviewsCount: reviewsCount,
@@ -157,4 +186,38 @@ func GetMyPosts(userID uint64, page, pageSize int) ([]PostWithLike, int64, error
 	}
 
 	return list, total, nil
+}
+//获取单个表白
+type SinglePost struct {
+	models.Post
+	LikeCount int64 `json:"like_count"`
+	LikedByMe bool  `json:"liked_by_me"`
+	ReviewsCount int64 `json:"reviews_count"`
+}
+func GetSinglePost(postID,userID uint64) (SinglePost, error) {
+	var post models.Post
+	redis.IncrView(postID)
+	err := database.DB.
+        Create(&models.View{PostID: postID, UserID: userID}).Error
+	if err != nil {
+		return SinglePost{},err
+	}
+	result := database.DB.
+		Preload("Images").
+		Where("id = ?", postID).
+		First(&post)
+	if result.Error != nil {
+		return SinglePost{},result.Error
+	}
+	likeCount := redis.GetPostLikeCount(post.ID, 0) 
+	likedByMe := redis.IsUserLiked(post.ID, userID, 0) 
+	reviewsCount := redis.GetPostReviewCount(post.ID) 
+
+	list:=SinglePost{
+		Post: post,
+		LikeCount: likeCount,
+		LikedByMe: likedByMe,
+		ReviewsCount: reviewsCount,
+	}
+	return list,nil
 }

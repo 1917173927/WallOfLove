@@ -214,6 +214,11 @@ func GetPostsByUserID(c *gin.Context) {
 		apiException.AbortWithException(c,apiException.ParamError,err)
 		return
 	}
+	_,err = services.GetUserDataByID(req.UserID)
+	if err != nil {
+		apiException.AbortWithException(c,apiException.TargetError,err)
+		return
+	}
 	var posts []services.PostWithLike
 	var total int64
 	if req.UserID==UID{
@@ -240,5 +245,42 @@ func GetPostsByUserID(c *gin.Context) {
 			Total:      total,
 	    })
 }
+	utils.JsonSuccessResponse(c, out)
+}
+//获得单个帖子
+type GetSinglePostData struct {
+	ID uint64 `form:"post_id"`
+}
+type SinglePost struct {
+	Post services.SinglePost `json:"post"`
+	ImagePaths []string `json:"image_paths"`
+}
+func GetSinglePost(c *gin.Context) {
+	uid, _ := c.Get("userID")
+	UID := uid.(uint64)
+	var req GetSinglePostData
+	err := c.ShouldBind(&req)
+	if err != nil {
+		apiException.AbortWithException(c,apiException.ParamError,err)
+		return
+	}
+	post, err := services.GetSinglePost(req.ID,UID)
+	if err != nil {
+		apiException.AbortWithException(c,apiException.ServerError,err)
+		return
+	}
+	if  post.Anonymous {
+		post.UserID = 0
+		post.UserNickname = "?"
+		post.AvatarPath = ""
+	}
+	paths := make([]string, 0, len(post.Images))
+	for _, img := range post.Images {
+		paths = append(paths, img.FilePath) 
+	}
+	out := SinglePost{
+		Post: post,
+		ImagePaths: paths,
+	}
 	utils.JsonSuccessResponse(c, out)
 }

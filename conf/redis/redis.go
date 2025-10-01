@@ -135,3 +135,23 @@ func GetReviewReplyCount(reviewID uint64) int64 {
 	Rdb.Set(Ctx, key, cnt, 0)
 	return cnt
 }
+
+//浏览数+1 并返回最新值
+func IncrView(postID uint64) int64 {
+	count, _ := Rdb.Incr(Ctx, fmt.Sprintf("post:%d:views", postID)).Result()
+	return count
+}
+// 读浏览数
+func GetPostViewCount(postID uint64) int64 {
+	key := fmt.Sprintf("post:%d:views", postID)
+	//读缓存
+	if val, err := Rdb.Get(Ctx, key).Int64(); err == nil {
+		return val
+	}
+	//错误：读库
+	var cnt int64
+	database.DB.Model(&models.View{}).Where("post_id = ? ", postID).Count(&cnt)
+	//写回缓存
+	Rdb.Set(Ctx, key, cnt, 0)
+	return cnt
+}

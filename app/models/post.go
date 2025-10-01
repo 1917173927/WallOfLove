@@ -5,8 +5,8 @@ import "time"
 
 // Post 定义帖子的数据结构，对应数据库中的帖子表。
 type Post struct {
-    ID           uint64     `json:"id"`                  // 帖子唯一标识符
-    IsPublished bool       `json:"is_published"`      // 帖子是否已发布
+    ID           uint64     `json:"id"`                 // 帖子唯一标识符
+    IsPublished bool       `json:"is_published"`        // 帖子是否已发布
     UserID       uint64     `json:"user_id"`            // 发帖用户的ID
     Content      string     `json:"content"`            // 帖子内容
     Anonymous    bool       `json:"anonymous"`          // 是否匿名发帖

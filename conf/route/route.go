@@ -24,8 +24,18 @@ func Init(r *gin.Engine) {
 
 			auth.POST("/post", controllers.CreatePost)
 			auth.PUT("/post", controllers.UpdatePost)
-			auth.GET("/post", controllers.GetVisiblePosts)
+			// 使用查询参数区分功能
+			// /api/post?post_id=123 获取单个帖子
+			// /api/post 获取帖子列表
+			auth.GET("/post", func(c *gin.Context) {
+				if c.Query("post_id") != "" {
+					controllers.GetSinglePost(c)
+				} else {
+					controllers.GetVisiblePosts(c)
+				}
+			})
 			auth.DELETE("/post", controllers.DeletePost)
+			auth.GET("/popranking", controllers.PopRanking)
 
 			auth.POST("/review", controllers.CreateReview)
 			auth.GET("/review", controllers.GetReviewsByPostID)
@@ -36,7 +46,8 @@ func Init(r *gin.Engine) {
 			auth.DELETE("/blacklist", controllers.UnblackUser)
 			auth.GET("/blacklist", controllers.GetBlackList)
 
-			auth.POST("/uploadimage", controllers.UploadImage)
+			auth.POST("/image", controllers.UploadImage)
+			auth.DELETE("/image", controllers.DeleteImage)
 
 			auth.POST("/like", controllers.LikePost)
 		}

@@ -181,7 +181,7 @@ func GetVisiblePosts(c *gin.Context) {
 		if posts[i].Anonymous {
 			posts[i].UserID = 0
 			posts[i].UserNickname = "?"
-			posts[i].AvatarPath = ""
+			posts[i].AvatarPath = "images/default/anonymous.png"
 		}
 	}
 	// 拼图片路径
@@ -272,7 +272,7 @@ func GetSinglePost(c *gin.Context) {
 	if  post.Anonymous {
 		post.UserID = 0
 		post.UserNickname = "?"
-		post.AvatarPath = ""
+		post.AvatarPath = "images/default/anonymous.png"
 	}
 	paths := make([]string, 0, len(post.Images))
 	for _, img := range post.Images {

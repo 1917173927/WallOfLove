@@ -15,7 +15,8 @@ import (
 type RegisterData struct {
 	Username      string  `json:"username"        binding:"required"`
 	Name          string  `json:"name"            binding:"required"`
-	Password      string  `json:"password"        binding:"required,pwdmin"`
+	Password      string  `json:"password"        binding:"required,min=8,max=16"`
+	Gender        int     `json:"gender"          binding:"required"` //0:男，1:女，2:保密
 	AvatarPath    string  `json:"avatar_path"`
 }
 
@@ -53,6 +54,8 @@ func Register(c *gin.Context) {
 		Username:      data.Username,
 		Nickname:      data.Name,
 		Password:      hash,
+		Gender:        data.Gender,
+		Signature:     "这个人很神秘，什么都没有写",
 		AvatarPath:    data.AvatarPath,
 	})
 	if err != nil {

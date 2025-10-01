@@ -3,7 +3,6 @@ package main
 
 import (
 	"github.com/1917173927/WallOfLove/app/middleware"
-	"github.com/1917173927/WallOfLove/app/validator"
 	"github.com/1917173927/WallOfLove/app/services"
 	"github.com/1917173927/WallOfLove/conf/database"
 	"github.com/1917173927/WallOfLove/conf/route"
@@ -18,7 +17,6 @@ import (
 // 5. 启动服务，监听 8080 端口
 func main() {
 	database.Init()  // 初始化数据库连接
-    validator.Init() // 初始化验证器
     services.StartScheduler() // 启动定时任务服务
 
 	r := gin.Default() // 创建 Gin 引擎实例

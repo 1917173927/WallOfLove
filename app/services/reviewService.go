@@ -12,15 +12,27 @@ import (
 
 //创建评论
 func CreateReview(review *models.Review) error {
+	redis.IncrReview(review.PostID)
 	return database.DB.Create(review).Error
+}
+//删除评论
+func DeleteReview(reviewID uint64) error{
+	redis.DecrReview(reviewID)
+	return database.DB.Delete(&models.Review{}, "id = ?", reviewID).Error
 }
 func GetReviewsByPostID(postID uint64) error {
 	var reviews []models.Review
 	return database.DB.Where("post_id = ?", postID).Find(&reviews).Error
 }
-func GetReviewByReviewID(ReviewID uint64) error {
-	var reviews []models.Review
-	return database.DB.Where("id = ?", ReviewID).First(&reviews).Error
+func GetReviewByReviewID(ReviewID uint64) (*models.Review, error) {
+	var review models.Review
+	result := database.DB.
+		Where("id = ?", ReviewID).
+		First(&review)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return &review, nil
 }
 //获得所有评论and每条评论的前两条回复
 type ReviewWithLike struct {
@@ -28,6 +40,7 @@ type ReviewWithLike struct {
 	LikeCount int64 `json:"like_count"`
 	LikedByMe bool  `json:"liked_by_me"`
 	Replies []models.Reply `json:"replies"`
+	RepliesCount int64 `json:"replies_count"`
 }
 func GetVisibleReviews(postID uint64, userID uint64, page, pageSize int) ([]ReviewWithLike, int64, error) {
 	sub, _ := utils.GetBlackListIDs(userID)
@@ -39,7 +52,7 @@ func GetVisibleReviews(postID uint64, userID uint64, page, pageSize int) ([]Revi
 		Where("user_id NOT IN (?)", sub).
 		Count(&total)
 
-	//只拿评论（不带点赞列）
+	//拿评论和回复
 	var reviews []models.Review
 	err := database.DB.
 		Preload("Replies", func(db *gorm.DB) *gorm.DB {
@@ -59,6 +72,7 @@ func GetVisibleReviews(postID uint64, userID uint64, page, pageSize int) ([]Revi
 	for _, r := range reviews {
 		likeCount := redis.GetPostLikeCount(postID, r.ID)   // 评论点赞 reviewID!=0
 		likedByMe := redis.IsUserLiked(postID, userID, r.ID) // 当前用户是否点赞这条评论
+		repliesCount:= redis.GetReviewReplyCount(r.ID) //评论回复数
 
 		// 过滤被拉黑回复
 		filterReplies(&r, sub)
@@ -67,6 +81,7 @@ func GetVisibleReviews(postID uint64, userID uint64, page, pageSize int) ([]Revi
 			Review:    r,
 			LikeCount: likeCount,
 			LikedByMe: likedByMe,
+			RepliesCount:repliesCount,
 			Replies:   r.Replies,
 		})
 	}

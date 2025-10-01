@@ -9,6 +9,8 @@ type User struct {
 	Username      string    `json:"username"`            // 用户名，用于登录和显示
 	Password      string    `json:"-"`                   // 密码，JSON序列化时忽略
 	Nickname      string    `json:"nickname"`            // 用户昵称，用于显示
-	AvatarPath    string   `json:"avatar_path"`          // 用户头像路径
+	AvatarPath    string    `json:"avatar_path"`         // 用户头像路径
+	Gender        int       `json:"sex"`                 // 用户性别,0:男，1:女，2:保密
+	Signature     string    `json:"signature"`           // 用户个性签名
 	CreatedAt     time.Time `json:"created_at"`          // 用户创建时间
 }

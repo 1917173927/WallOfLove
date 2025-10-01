@@ -22,7 +22,7 @@ func CreateReply(c *gin.Context) {
 		apiException.AbortWithException(c,apiException.ParamError,err)
 		return
 	}
-	err := services.GetReviewByReviewID(req.ReviewID)
+	_,err := services.GetReviewByReviewID(req.ReviewID)
 	if err != nil {
 		apiException.AbortWithException(c,apiException.TargetError,err)
 		return

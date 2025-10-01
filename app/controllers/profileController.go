@@ -8,15 +8,16 @@ import (
 	"github.com/1917173927/WallOfLove/app/utils"
 	"github.com/gin-gonic/gin"
 )
-
+//更新用户信息
 type updateProfileData struct {
 	Nickname         string  `json:"nickname"`
 	Username         string  `json:"username"`
 	OriginalPassword string  `json:"original_password"`
-	Password         string  `json:"password" binding:"pwdmin"`
+	Password         string  `json:"password" binding:"omitempty,min=8,max=16"`
+	Gender           *int    `json:"gender"`
+	Signature        string  `json:"signature" binding:"max=80"`
 	AvatarPath       string  `json:"avatar_path"`
 }
-//更新用户信息
 func UpdateProfile(c *gin.Context) {
 	uid, _ := c.Get("userID")
 	UID := uid.(uint64)
@@ -56,6 +57,14 @@ func UpdateProfile(c *gin.Context) {
 	} else {
 		req.Password = user.Password
 	}
+	//若未填写性别，则用原值
+	if req.Gender == nil {
+		req.Gender = &user.Gender
+	}
+	//若未填写签名，则用原值
+	if req.Signature == "" {
+		req.Signature = user.Signature
+	}
 	//若未填写头像，则用原值
 	if req.AvatarPath == "" {
 		req.AvatarPath = user.AvatarPath
@@ -76,15 +85,37 @@ func UpdateProfile(c *gin.Context) {
 		}
     utils.JsonSuccessResponse(c,nil)
 }
-
 //获取用户信息
+type getProfileData struct {
+	ID uint64 `form:"id"`
+}
+type ProfileData struct {
+	Profiles []models.User `json:"profiles"`
+    Permission bool `json:"permission"`
+}
 func GetProfile(c *gin.Context) {
 	uid, _ := c.Get("userID")
 	UID := uid.(uint64)
-	user, err := services.GetUserDataByID(UID)
+	var req getProfileData
+	err := c.ShouldBind(&req)
+	if err != nil {
+		apiException.AbortWithException(c,apiException.PwdOrParamError,err)
+		return
+	}
+	var permission bool
+	if UID==req.ID{
+		permission=true
+	}else{
+		permission=false
+	}//ture:有权限，false:无权限
+	user, err := services.GetUserDataByID(req.ID)
 	if err != nil {
 		apiException.AbortWithException(c,apiException.ServerError,err)
 		return
 	}
-	utils.JsonSuccessResponse(c, user)
+	out:=ProfileData{
+		Profiles: []models.User{*user},
+		Permission: permission,
+	}
+	utils.JsonSuccessResponse(c, out)
 }

@@ -199,3 +199,46 @@ func GetVisiblePosts(c *gin.Context) {
 }
 	utils.JsonSuccessResponse(c, out)
 }
+//获取指定用户发布的表白
+type GetPostsByUserIDData struct {
+	UserID uint64 `form:"user_id"`
+	PageSize int `form:"page_size"`
+	PageNum  int `form:"page_num"`
+}
+func GetPostsByUserID(c *gin.Context) {	
+	uid, _ := c.Get("userID")
+	UID := uid.(uint64)
+	var req GetPostsByUserIDData
+	err := c.ShouldBind(&req)
+	if err != nil {
+		apiException.AbortWithException(c,apiException.ParamError,err)
+		return
+	}
+	var posts []services.PostWithLike
+	var total int64
+	if req.UserID==UID{
+	    posts, total, err = services.GetMyPosts(req.UserID, req.PageNum, req.PageSize)
+	    if err != nil {
+		    apiException.AbortWithException(c,apiException.ServerError,err)
+		    return
+	}}else{
+		posts, total, err = services.GetPostsByUserID(req.UserID, req.PageNum, req.PageSize)
+	    if err != nil {
+		    apiException.AbortWithException(c,apiException.ServerError,err)
+		    return
+	}}
+	// 拼图片路径
+    out := make([]PostWithPaths, 0, len(posts))
+    for _, p := range posts {
+	    paths := make([]string, 0, len(p.Images))
+	    for _, img := range p.Images {
+		    paths = append(paths, img.FilePath) // 只拿路径
+	    }
+	    out = append(out, PostWithPaths{
+		    Post:       p,
+		    ImagePaths: paths,
+			Total:      total,
+	    })
+}
+	utils.JsonSuccessResponse(c, out)
+}

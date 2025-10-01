@@ -39,6 +39,7 @@ type PostWithLike struct {
 	models.Post
 	LikeCount int64 `json:"like_count"`
 	LikedByMe bool  `json:"liked_by_me"`
+	ReviewsCount int64 `json:"reviews_count"`
 }
 func GetVisiblePosts(userID uint64, page, pageSize int) ([]PostWithLike, int64, error) {
 	sub, _ := utils.GetBlackListIDs(userID)
@@ -68,14 +69,92 @@ func GetVisiblePosts(userID uint64, page, pageSize int) ([]PostWithLike, int64, 
 	for _, p := range posts {
 		likeCount := redis.GetPostLikeCount(p.ID, 0)     // 帖子点赞 reviewID=0
 		likedByMe := redis.IsUserLiked(p.ID, userID, 0) // 当前用户是否点赞
+		reviewsCount := redis.GetPostReviewCount(p.ID) // 帖子评论数
 
 		list = append(list, PostWithLike{
 			Post:      p,
 			LikeCount: likeCount,
 			LikedByMe: likedByMe,
+			ReviewsCount: reviewsCount,
+		})
+	}
+
+	return list, total, nil
+}
+//根据用户id获取用户发布的表白
+func GetPostsByUserID(userID uint64, page, pageSize int) ([]PostWithLike, int64, error) {	
+	//总条数
+	var total int64
+	database.DB.Model(&models.Post{}).
+		Where("visibility = ?", true).
+		Where("anonymous = ?",false).
+		Where("user_id = ?", userID).
+		Count(&total)
+	//拿帖子
+	var posts []models.Post
+	err := database.DB.
+		Preload("Images").
+		Where("visibility = ?", true).
+		Where("anonymous = ?",false).
+		Where("user_id = ?", userID).
+		Order("created_at desc").
+		Scopes(utils.Paginate(page, pageSize)).
+		Find(&posts).Error
+	if err != nil {
+		return nil, 0, err
+	}
+
+	//点赞数 + 是否已赞（redis）
+	list := make([]PostWithLike, 0, len(posts))
+	for _, p := range posts {
+		likeCount := redis.GetPostLikeCount(p.ID, 0)     // 帖子点赞 reviewID=0
+		likedByMe := redis.IsUserLiked(p.ID, userID, 0) // 当前用户是否点赞
+		reviewsCount := redis.GetPostReviewCount(p.ID) // 帖子评论数	
+
+		list = append(list, PostWithLike{
+			Post:      p,
+			LikeCount: likeCount,
+			LikedByMe: likedByMe,
+			ReviewsCount: reviewsCount,
 		})
 	}
 
 	return list, total, nil
 }
 
+//根据用户id获取用户发布的表白
+func GetMyPosts(userID uint64, page, pageSize int) ([]PostWithLike, int64, error) {	
+	//总条数
+	var total int64
+	database.DB.Model(&models.Post{}).
+		Where("user_id = ?", userID).
+		Count(&total)
+	//拿帖子
+	var posts []models.Post
+	err := database.DB.
+		Preload("Images").
+		Where("user_id = ?", userID).
+		Order("created_at desc").
+		Scopes(utils.Paginate(page, pageSize)).
+		Find(&posts).Error
+	if err != nil {
+		return nil, 0, err
+	}
+
+	//点赞数 + 是否已赞（redis）
+	list := make([]PostWithLike, 0, len(posts))
+	for _, p := range posts {
+		likeCount := redis.GetPostLikeCount(p.ID, 0)     // 帖子点赞 reviewID=0
+		likedByMe := redis.IsUserLiked(p.ID, userID, 0) // 当前用户是否点赞
+		reviewsCount := redis.GetPostReviewCount(p.ID) // 帖子评论数	
+
+		list = append(list, PostWithLike{
+			Post:      p,
+			LikeCount: likeCount,
+			LikedByMe: likedByMe,
+			ReviewsCount: reviewsCount,
+		})
+	}
+
+	return list, total, nil
+}

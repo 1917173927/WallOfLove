@@ -23,7 +23,7 @@ var (
 	UserAlreadyExisted    = NewError(200503, log.LevelInfo, "该用户已被激活")
 	TargetError           = NewError(200504, log.LevelInfo, "找不到该目标")
 	EmptyError            = NewError(200505, log.LevelInfo, "内容不能为空")
-	PwdOrParamError       = NewError(200506, log.LevelInfo, "密码不能小于8位,或参数错误")
+	PwdOrParamError       = NewError(200506, log.LevelInfo, "密码必须在8~16位,或其他参数错误")
 	IllegalTarget         = NewError(200507, log.LevelInfo, "不能拉黑自己")
 	NoThatPasswordOrWrong = NewError(200508, log.LevelInfo, "密码错误")
 	NotLogin              = NewError(200509, log.LevelInfo, "未登录")

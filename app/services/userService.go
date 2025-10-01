@@ -55,6 +55,7 @@ func CompareHash(password, hash string) error {
 func GetUserDataByID(userID uint64) (*models.User, error) {
 	var user models.User
 	result := database.DB.
+		Select("id", "username", "nickname", "avatar_path", "created_at", "gender", "signature").
 		Where("id = ?", userID).
 		First(&user)
 	if result.Error != nil {

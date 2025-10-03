@@ -79,7 +79,7 @@ func GetVisiblePosts(userID uint64, page, pageSize int) ([]PostWithLike, int64, 
 		short = string([]rune(p.Content)[:100]) + "..."
 		isFull = true
 	}
-
+                                                          
 		list = append(list, PostWithLike{
 			Post:      p,
 			IsFull: isFull,

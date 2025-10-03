@@ -9,9 +9,8 @@ import (
 )
 
 type ReplyData struct {
-	UserID    uint64    `json:"user_id"`
-	ReviewID  uint64    `json:"review_id"`
-	Content   string    `json:"content"`
+	ReviewID  uint64    `json:"review_id" binding:"required"`
+	Content   string    `json:"content" binding:"required"`
 }
 //创建回复
 func CreateReply(c *gin.Context) {
@@ -45,7 +44,7 @@ func CreateReply(c *gin.Context) {
 
 
 type GetReplyData struct {
-	ReviewID uint64 `form:"review_id"`
+	ReviewID uint64 `form:"review_id" binding:"required"`
 	Page     int    `form:"page"`
 }
 type ReplyList struct {

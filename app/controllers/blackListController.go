@@ -10,7 +10,7 @@ import (
 
 // BlackListData 定义拉黑请求的数据结构
 type BlackListData struct {
-	BlockedID uint64 `json:"blocked_id"` // 被拉黑的用户 ID
+	BlockedID uint64 `json:"blocked_id" binding:"required"` // 被拉黑的用户 ID
 }
 
 // BlackUser 处理用户拉黑请求，执行以下操作：

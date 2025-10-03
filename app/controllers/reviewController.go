@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"time"
 
 	"github.com/1917173927/WallOfLove/app/apiException"
 	"github.com/1917173927/WallOfLove/app/models"
@@ -11,10 +10,8 @@ import (
 )
 //创建评论
 type ReviewData struct {
-	UserID    uint64    `json:"user_id"`
-	PostID    uint64    `json:"post_id"`
-	Content   string    `json:"content"`
-	CreatedAt time.Time `json:"created_at"`
+	PostID    uint64    `json:"post_id" binding:"required"`
+	Content   string    `json:"content" binding:"required"`
 }
 
 func CreateReview(c *gin.Context) {
@@ -47,7 +44,7 @@ func CreateReview(c *gin.Context) {
 }
 //删除评论
 type DeleteReviewData struct {
-	ReviewID uint64 `json:"review_id"`
+	ReviewID uint64 `json:"review_id" binding:"required"`
 }
 func DeleteReview(c *gin.Context) {
 	uid, _ := c.Get("userID")
@@ -77,7 +74,7 @@ func DeleteReview(c *gin.Context) {
 }
 //获取评论列表
 type GetReviewsByPostIDData struct {
-	PostID uint64 `form:"post_id"`
+	PostID uint64 `form:"post_id" binding:"required"`
 	Page int `form:"page"`
 	PageSize int `form:"page_size"`
 }

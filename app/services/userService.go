@@ -67,7 +67,7 @@ func GetUserDataByID(userID uint64) (*models.User, error) {
 // 更新用户信息
 func UpdateProfile(user *models.User) error {
 	return database.DB.Model(user).
-		Select("nickname", "username", "password", "avatar_path").
+		Select("nickname", "username", "password", "avatar_path", "gender", "signature").
 		Updates(user).Error
 }
 

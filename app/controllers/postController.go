@@ -201,7 +201,7 @@ func GetVisiblePosts(c *gin.Context) {
 }
 //获取指定用户发布的表白
 type GetPostsByUserIDData struct {
-	UserID uint64 `form:"user_id"`
+	UserID uint64 `form:"user_id" binding:"required"`
 	PageSize int `form:"page_size"`
 	PageNum  int `form:"page_num"`
 }
@@ -249,7 +249,7 @@ func GetPostsByUserID(c *gin.Context) {
 }
 //获得单个帖子
 type GetSinglePostData struct {
-	ID uint64 `form:"post_id"`
+	ID uint64 `form:"post_id" binding:"required"`
 }
 type SinglePost struct {
 	Post services.SinglePost `json:"post"`

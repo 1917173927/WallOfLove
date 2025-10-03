@@ -75,6 +75,8 @@ func UpdateProfile(c *gin.Context) {
 		Nickname:      req.Nickname,
 		Username:      req.Username,
 		Password:      req.Password,
+		Gender:        *req.Gender,
+		Signature:     req.Signature,
 		AvatarPath:    req.AvatarPath,
 	}
 	//更新用户信息
@@ -87,7 +89,7 @@ func UpdateProfile(c *gin.Context) {
 }
 //获取用户信息
 type getProfileData struct {
-	ID uint64 `form:"id"`
+	ID uint64 `form:"id" binding:"required"`
 }
 type ProfileData struct {
 	Profiles []models.User `json:"profiles"`

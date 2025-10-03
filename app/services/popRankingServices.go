@@ -41,12 +41,13 @@ func RefreshAllHeat() error {
 	}).CreateInBatches(heatList, 1000).Error
 }
 
-//获取排行榜
+// 获取排行榜
 type PopRanking struct {
-	PostID    uint64    `json:"post_id"`
-	HeatValue uint64    `json:"heat_value"`
+	PostID       uint64 `json:"post_id"`
+	HeatValue    uint64 `json:"heat_value"`
 	UserNickname string `json:"user_nickname"`
 }
+
 func GetPopRanking(userID uint64) ([]PopRanking, error) {
 	// 先刷新热度（保证实时）
 	if err := RefreshAllHeat(); err != nil {
@@ -58,16 +59,19 @@ func GetPopRanking(userID uint64) ([]PopRanking, error) {
 
 	// 连表查：热度前 10 + 发布人信息 + 匿名打码
 	var rank []PopRanking
-	err := database.DB.
+	base := database.DB.
 		Table("heats").
 		Select(`heats.post_id, heats.heat_value, 
-		        CASE WHEN posts.anonymous THEN '?' ELSE users.nickname END AS user_nickname`).// 根据bool值匿名打码
+				CASE WHEN posts.anonymous THEN '?' ELSE users.nickname END AS user_nickname`).
 		Joins("JOIN posts ON posts.id = heats.post_id").
 		Joins("JOIN users ON users.id = posts.user_id").
-		Where("posts.visibility = ?", true).                      // 公开帖
-		Where("posts.user_id NOT IN (?)", blackList).             // 过滤拉黑
-		Order("heats.heat_value DESC").                           // 热度降序
-		Limit(10).                                                // 只要前 10
+		Where("posts.visibility = ?", true) // 公开帖
+	if len(blackList) > 0 {
+		base = base.Where("posts.user_id NOT IN (?)", blackList) // 过滤拉黑
+	}
+	err := base.
+		Order("heats.heat_value DESC").
+		Limit(10). // 只要前 10
 		Scan(&rank).Error
 	if err != nil {
 		return nil, err

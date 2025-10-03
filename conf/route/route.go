@@ -24,16 +24,8 @@ func Init(r *gin.Engine) {
 
 			auth.POST("/post", controllers.CreatePost)
 			auth.PUT("/post", controllers.UpdatePost)
-			// 使用查询参数区分功能
-			// /api/post?post_id=123 获取单个帖子
-			// /api/post 获取帖子列表
-			auth.GET("/post", func(c *gin.Context) {
-				if c.Query("post_id") != "" {
-					controllers.GetSinglePost(c)
-				} else {
-					controllers.GetVisiblePosts(c)
-				}
-			})
+			auth.GET("/post/list", controllers.GetVisiblePosts)
+			auth.GET("/post/:id", controllers.GetSinglePost)
 			auth.DELETE("/post", controllers.DeletePost)
 			auth.GET("/popranking", controllers.PopRanking)
 

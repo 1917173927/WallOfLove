@@ -7,7 +7,6 @@ import (
 	"github.com/1917173927/WallOfLove/app/apiException"
 	"github.com/1917173927/WallOfLove/app/services"
 	"github.com/1917173927/WallOfLove/app/utils"
-	"github.com/1917173927/WallOfLove/app/utils/errno"
 	"github.com/gin-gonic/gin"
 )
 
@@ -39,18 +38,48 @@ func UploadImage(c *gin.Context) {
 	}
 	image, err := services.UploadImage(c, UID, user.Username, postID, isAvatar, file)
 	if err != nil {
-		apiException.AbortWithException(c,apiException.UploadFileError,err)
-		return
-	}else if errors.Is(err,errno.ErrImageSizeExceeded){
-		apiException.AbortWithException(c,apiException.FileSizeExceedError,err)
-		return
-	}else if errors.Is(err,errno.ErrImageTypeInvalid){
-		apiException.AbortWithException(c,apiException.ImageFormatError,err)
-		return
-	}else if errors.Is(err,errno.ErrNotImage){
-		apiException.AbortWithException(c,apiException.FileNotImageError,err)
+		if errors.Is(err, apiException.ImageSizeExceeded) {
+			apiException.AbortWithException(c, apiException.FileSizeExceedError, err)
+		} else if errors.Is(err, apiException.ImageTypeInvalid) {
+			apiException.AbortWithException(c, apiException.ImageFormatError, err)
+		} else if errors.Is(err, apiException.NotImage) {
+			apiException.AbortWithException(c, apiException.FileNotImageError, err)
+		} else {
+			apiException.AbortWithException(c, apiException.UploadFileError, err)
+		}
 		return
 	}
 
 	utils.JsonSuccessResponse(c, image)
 }
+
+// DeleteImage 处理图片删除请求
+// 1. 获取用户ID和图片ID
+// 2. 调用服务层删除图片
+// 3. 处理可能的错误
+func DeleteImage(c *gin.Context) {
+	uid, _ := c.Get("userID")
+	UID := uid.(uint64)
+	
+	var req struct {
+		ImageID uint64 `json:"image_id" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		apiException.AbortWithException(c,apiException.ParamError,err)
+		return
+	}
+
+	if err := services.DeleteImage(req.ImageID, UID); err != nil {
+		if errors.Is(err, apiException.ImageNotFound) {
+			apiException.AbortWithException(c, apiException.TargetError, err)
+		} else if errors.Is(err, apiException.NotPermission) {
+			apiException.AbortWithException(c, apiException.NotPermission, err)
+		} else {
+			apiException.AbortWithException(c, apiException.ServerError, err)
+		}
+		return
+	}
+
+	utils.JsonSuccessResponse(c, nil)
+}
+

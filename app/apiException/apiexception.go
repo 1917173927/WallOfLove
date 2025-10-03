@@ -34,6 +34,13 @@ var (
 	UploadFileError       = NewError(200514, log.LevelInfo, "上传文件失败")
 	FileSizeExceedError   = NewError(200515, log.LevelInfo, "文件大小超限")
 	ImageFormatError      = NewError(200516, log.LevelInfo, "仅支持 JPG 和 PNG 格式的图片")
+	ImageSizeExceeded    = NewError(200517, log.LevelInfo, "图片大小超出限制")
+	ImageTypeInvalid     = NewError(200518, log.LevelInfo, "图片类型无效")
+	ImageUploadFailed    = NewError(200519, log.LevelInfo, "图片上传失败")
+	NotImage            = NewError(200520, log.LevelInfo, "不是图片")
+	ImageNotFound       = NewError(200521, log.LevelInfo, "图片不存在")
+	ImageDeleteFailed   = NewError(200522, log.LevelInfo, "图片删除失败")
+
 
 	NotFound = NewError(200404, log.LevelWarn, http.StatusText(http.StatusNotFound))
 )

@@ -2,9 +2,11 @@
 package main
 
 import (
+	"fmt"
 	"github.com/1917173927/WallOfLove/app/middleware"
 	"github.com/1917173927/WallOfLove/app/services"
 	"github.com/1917173927/WallOfLove/conf/database"
+	"github.com/1917173927/WallOfLove/conf/redis"
 	"github.com/1917173927/WallOfLove/conf/route"
 	"github.com/gin-gonic/gin"
 )
@@ -17,6 +19,10 @@ import (
 // 5. 启动服务，监听 8080 端口
 func main() {
 	database.Init()  // 初始化数据库连接
+	if err := redis.Init(); err != nil {
+		fmt.Printf("Redis initialization failed: %v\n", err)
+		fmt.Println("Continuing without Redis support")
+	}
     services.StartScheduler() // 启动定时任务服务
 
 	r := gin.Default() // 创建 Gin 引擎实例

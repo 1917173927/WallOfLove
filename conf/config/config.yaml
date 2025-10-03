@@ -2,8 +2,8 @@ mysql:
   host: "localhost"
   port: 3306
   user: "root"
-  password: "123456"
+  password: "coppklmja!BWZ"
   dbname: "walloflove"
 
 image:
-  max_size: 2097152  # 2MB
+  max_size: 2097152*2  # 2MB

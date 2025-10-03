@@ -1,6 +1,8 @@
 package services
 
 import (
+	"log"
+
 	"github.com/1917173927/WallOfLove/app/models"
 	"github.com/1917173927/WallOfLove/app/utils"
 	"github.com/1917173927/WallOfLove/conf/database"
@@ -34,34 +36,42 @@ func UpdatePost(post *models.Post) error {
 func DeletePost(postID uint64) error {
 	return database.DB.Delete(&models.Post{}, "id = ?", postID).Error
 }
-//获取未被拉黑的其他人发布的表白
+
+// 获取未被拉黑的其他人发布的表白
 type PostWithLike struct {
 	models.Post
-	IsFull bool `json:"is_full"` //true:超过100字，false:未超过100字
+	IsFull       bool   `json:"is_full"` //true:超过100字，false:未超过100字
 	ShortContent string `json:"short_content"`
-	LikeCount int64 `json:"like_count"`
-	LikedByMe bool  `json:"liked_by_me"`
-	ReviewsCount int64 `json:"reviews_count"`
+	LikeCount    int64  `json:"like_count"`
+	LikedByMe    bool   `json:"liked_by_me"`
+	ReviewsCount int64  `json:"reviews_count"`
 }
+
 func GetVisiblePosts(userID uint64, page, pageSize int) ([]PostWithLike, int64, error) {
 	sub, _ := utils.GetBlackListIDs(userID)
+	log.Printf("GetVisiblePosts: userID=%d blacklistedIDs=%v page=%d pageSize=%d", userID, sub, page, pageSize)
 
 	//总条数
 	var total int64
-	database.DB.Model(&models.Post{}).
-		Where("visibility = ?", true).
-		Where("user_id NOT IN (?)", sub).
-		Count(&total)
+	countDB := database.DB.Model(&models.Post{}).
+		Where("visibility = ?", true)
+	if len(sub) > 0 {
+		countDB = countDB.Where("user_id NOT IN (?)", sub)
+	}
+	countDB.Count(&total)
 
 	//拿帖子
 	var posts []models.Post
-	err := database.DB.
+	q := database.DB.
 		Preload("Images").
-		Where("visibility = ?", true).
-		Where("user_id NOT IN (?)", sub).
-		Order("created_at desc").
+		Where("visibility = ?", true)
+	if len(sub) > 0 {
+		q = q.Where("user_id NOT IN (?)", sub)
+	}
+	err := q.Order("created_at desc").
 		Scopes(utils.Paginate(page, pageSize)).
 		Find(&posts).Error
+	log.Printf("GetVisiblePosts: query returned %d rows (err=%v)", len(posts), err)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -69,72 +79,23 @@ func GetVisiblePosts(userID uint64, page, pageSize int) ([]PostWithLike, int64, 
 	//点赞数 + 是否已赞（redis）
 	list := make([]PostWithLike, 0, len(posts))
 	for _, p := range posts {
-		likeCount := redis.GetPostLikeCount(p.ID, 0)     // 帖子点赞 reviewID=0
+		likeCount := redis.GetPostLikeCount(p.ID, 0)    // 帖子点赞 reviewID=0
 		likedByMe := redis.IsUserLiked(p.ID, userID, 0) // 当前用户是否点赞
-		reviewsCount := redis.GetPostReviewCount(p.ID) // 帖子评论数
+		reviewsCount := redis.GetPostReviewCount(p.ID)  // 帖子评论数
 
-		short:=p.Content
+		short := p.Content
 		isFull := false
-	if len([]rune(p.Content)) > 100 {
-		short = string([]rune(p.Content)[:100]) + "..."
-		isFull = true
-	}
-                                                          
-		list = append(list, PostWithLike{
-			Post:      p,
-			IsFull: isFull,
-			ShortContent: short,
-			LikeCount: likeCount,
-			LikedByMe: likedByMe,
-			ReviewsCount: reviewsCount,
-		})
-	}
-
-	return list, total, nil
-}
-//根据用户id获取用户发布的表白
-func GetPostsByUserID(userID uint64, page, pageSize int) ([]PostWithLike, int64, error) {	
-	//总条数
-	var total int64
-	database.DB.Model(&models.Post{}).
-		Where("visibility = ?", true).
-		Where("anonymous = ?",false).
-		Where("user_id = ?", userID).
-		Count(&total)
-	//拿帖子
-	var posts []models.Post
-	err := database.DB.
-		Preload("Images").
-		Where("visibility = ?", true).
-		Where("anonymous = ?",false).
-		Where("user_id = ?", userID).
-		Order("created_at desc").
-		Scopes(utils.Paginate(page, pageSize)).
-		Find(&posts).Error
-	if err != nil {
-		return nil, 0, err
-	}
-
-	//点赞数 + 是否已赞（redis）
-	list := make([]PostWithLike, 0, len(posts))
-	for _, p := range posts {
-		likeCount := redis.GetPostLikeCount(p.ID, 0)     // 帖子点赞 reviewID=0
-		likedByMe := redis.IsUserLiked(p.ID, userID, 0) // 当前用户是否点赞
-		reviewsCount := redis.GetPostReviewCount(p.ID) // 帖子评论数	
-		
-		short:=p.Content
-		isFull := false
-	if len([]rune(p.Content)) > 100 {
-		short = string([]rune(p.Content)[:100]) + "..."
-		isFull = true
-	}
+		if len([]rune(p.Content)) > 100 {
+			short = string([]rune(p.Content)[:100]) + "..."
+			isFull = true
+		}
 
 		list = append(list, PostWithLike{
-			Post:      p,
-			IsFull: isFull,
+			Post:         p,
+			IsFull:       isFull,
 			ShortContent: short,
-			LikeCount: likeCount,
-			LikedByMe: likedByMe,
+			LikeCount:    likeCount,
+			LikedByMe:    likedByMe,
 			ReviewsCount: reviewsCount,
 		})
 	}
@@ -142,17 +103,21 @@ func GetPostsByUserID(userID uint64, page, pageSize int) ([]PostWithLike, int64,
 	return list, total, nil
 }
 
-//根据用户id获取用户发布的表白
-func GetMyPosts(userID uint64, page, pageSize int) ([]PostWithLike, int64, error) {	
+// 根据用户id获取用户发布的表白
+func GetPostsByUserID(userID uint64, page, pageSize int) ([]PostWithLike, int64, error) {
 	//总条数
 	var total int64
 	database.DB.Model(&models.Post{}).
+		Where("visibility = ?", true).
+		Where("anonymous = ?", false).
 		Where("user_id = ?", userID).
 		Count(&total)
 	//拿帖子
 	var posts []models.Post
 	err := database.DB.
 		Preload("Images").
+		Where("visibility = ?", true).
+		Where("anonymous = ?", false).
 		Where("user_id = ?", userID).
 		Order("created_at desc").
 		Scopes(utils.Paginate(page, pageSize)).
@@ -164,60 +129,108 @@ func GetMyPosts(userID uint64, page, pageSize int) ([]PostWithLike, int64, error
 	//点赞数 + 是否已赞（redis）
 	list := make([]PostWithLike, 0, len(posts))
 	for _, p := range posts {
-		likeCount := redis.GetPostLikeCount(p.ID, 0)     // 帖子点赞 reviewID=0
+		likeCount := redis.GetPostLikeCount(p.ID, 0)    // 帖子点赞 reviewID=0
 		likedByMe := redis.IsUserLiked(p.ID, userID, 0) // 当前用户是否点赞
-		reviewsCount := redis.GetPostReviewCount(p.ID) // 帖子评论数	
-		
-		short:=p.Content
+		reviewsCount := redis.GetPostReviewCount(p.ID)  // 帖子评论数
+
+		short := p.Content
 		isFull := false
-	if len([]rune(p.Content)) > 100 {
-		short = string([]rune(p.Content)[:100]) + "..."
-		isFull = true
-	}
+		if len([]rune(p.Content)) > 100 {
+			short = string([]rune(p.Content)[:100]) + "..."
+			isFull = true
+		}
 
 		list = append(list, PostWithLike{
-			Post:      p,
-			IsFull: isFull,
+			Post:         p,
+			IsFull:       isFull,
 			ShortContent: short,
-			LikeCount: likeCount,
-			LikedByMe: likedByMe,
+			LikeCount:    likeCount,
+			LikedByMe:    likedByMe,
 			ReviewsCount: reviewsCount,
 		})
 	}
 
 	return list, total, nil
 }
-//获取单个表白
+
+// 根据用户id获取用户发布的表白
+func GetMyPosts(userID uint64, page, pageSize int) ([]PostWithLike, int64, error) {
+	//总条数
+	var total int64
+	database.DB.Model(&models.Post{}).
+		Where("user_id = ?", userID).
+		Count(&total)
+	//拿帖子
+	var posts []models.Post
+	err := database.DB.
+		Preload("Images").
+		Where("user_id = ?", userID).
+		Order("created_at desc").
+		Scopes(utils.Paginate(page, pageSize)).
+		Find(&posts).Error
+	if err != nil {
+		return nil, 0, err
+	}
+
+	//点赞数 + 是否已赞（redis）
+	list := make([]PostWithLike, 0, len(posts))
+	for _, p := range posts {
+		likeCount := redis.GetPostLikeCount(p.ID, 0)    // 帖子点赞 reviewID=0
+		likedByMe := redis.IsUserLiked(p.ID, userID, 0) // 当前用户是否点赞
+		reviewsCount := redis.GetPostReviewCount(p.ID)  // 帖子评论数
+
+		short := p.Content
+		isFull := false
+		if len([]rune(p.Content)) > 100 {
+			short = string([]rune(p.Content)[:100]) + "..."
+			isFull = true
+		}
+
+		list = append(list, PostWithLike{
+			Post:         p,
+			IsFull:       isFull,
+			ShortContent: short,
+			LikeCount:    likeCount,
+			LikedByMe:    likedByMe,
+			ReviewsCount: reviewsCount,
+		})
+	}
+
+	return list, total, nil
+}
+
+// 获取单个表白
 type SinglePost struct {
 	models.Post
-	LikeCount int64 `json:"like_count"`
-	LikedByMe bool  `json:"liked_by_me"`
+	LikeCount    int64 `json:"like_count"`
+	LikedByMe    bool  `json:"liked_by_me"`
 	ReviewsCount int64 `json:"reviews_count"`
 }
-func GetSinglePost(postID,userID uint64) (SinglePost, error) {
+
+func GetSinglePost(postID, userID uint64) (SinglePost, error) {
 	var post models.Post
 	redis.IncrView(postID)
 	err := database.DB.
-        Create(&models.View{PostID: postID, UserID: userID}).Error
+		Create(&models.View{PostID: postID, UserID: userID}).Error
 	if err != nil {
-		return SinglePost{},err
+		return SinglePost{}, err
 	}
 	result := database.DB.
 		Preload("Images").
 		Where("id = ?", postID).
 		First(&post)
 	if result.Error != nil {
-		return SinglePost{},result.Error
+		return SinglePost{}, result.Error
 	}
-	likeCount := redis.GetPostLikeCount(post.ID, 0) 
-	likedByMe := redis.IsUserLiked(post.ID, userID, 0) 
-	reviewsCount := redis.GetPostReviewCount(post.ID) 
+	likeCount := redis.GetPostLikeCount(post.ID, 0)
+	likedByMe := redis.IsUserLiked(post.ID, userID, 0)
+	reviewsCount := redis.GetPostReviewCount(post.ID)
 
-	list:=SinglePost{
-		Post: post,
-		LikeCount: likeCount,
-		LikedByMe: likedByMe,
+	list := SinglePost{
+		Post:         post,
+		LikeCount:    likeCount,
+		LikedByMe:    likedByMe,
 		ReviewsCount: reviewsCount,
 	}
-	return list,nil
+	return list, nil
 }

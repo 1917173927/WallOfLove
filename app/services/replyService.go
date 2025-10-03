@@ -36,3 +36,14 @@ func DeleteReply(replyID uint64) error {
 	redis.DecrReply(replyID)
 	return database.DB.Delete(&models.Reply{}, replyID).Error
 }
+
+func GetReplyByReplyID(replyID uint64) (*models.Reply, error) {
+	var reply models.Reply
+	result := database.DB.
+		Where("id = ?", replyID).
+		First(&reply)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return &reply, nil
+}

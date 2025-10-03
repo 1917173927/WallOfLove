@@ -19,7 +19,7 @@ func Init(r *gin.Engine) {
 		auth := api.Group("")
 		auth.Use(middleware.JWT())
 		{
-			auth.PUT("/user", controllers.UpdateProfile)
+			auth.PUT("/profile", controllers.UpdateProfile)
 			auth.GET("/profile", controllers.GetProfile)
 
 			auth.POST("/post", controllers.CreatePost)
@@ -31,8 +31,10 @@ func Init(r *gin.Engine) {
 
 			auth.POST("/review", controllers.CreateReview)
 			auth.GET("/review", controllers.GetReviewsByPostID)
+			auth.DELETE("/review", controllers.DeleteReview)
 			auth.POST("/reply", controllers.CreateReply)
 			auth.GET("/reply", controllers.GetRepliesByReviewID)
+			auth.DELETE("/reply", controllers.DeleteReply)
 
 			auth.POST("/blacklist", controllers.BlackUser)
 			auth.DELETE("/blacklist", controllers.UnblackUser)

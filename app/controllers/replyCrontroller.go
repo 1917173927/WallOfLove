@@ -41,8 +41,38 @@ func CreateReply(c *gin.Context) {
 	}
 	utils.JsonSuccessResponse(c, req)
 }
+//删除回复
+type DeleteReplyData struct {
+	ReplyID uint64 `json:"reply_id" binding:"required"`
+}
+func DeleteReply(c *gin.Context) {
+	uid, _ := c.Get("userID")
+	UID := uid.(uint64)
+	var req DeleteReplyData
+	err := c.ShouldBindJSON(&req)
+	if err != nil {
+		apiException.AbortWithException(c,apiException.ParamError,err)
+		return
+	}
+	originalReply, err := services.GetReplyByReplyID(req.ReplyID)
+	if err != nil {
+		apiException.AbortWithException(c,apiException.TargetError,err)
+		return
+	}
+	// 检查是否有权限删除评论
+	if originalReply.UserID != UID {
+		apiException.AbortWithException(c,apiException.NotPermission,nil)
+		return
+	}
+	err = services.DeleteReply(req.ReplyID)
+	if err != nil {
+		apiException.AbortWithException(c,apiException.ServerError,err)
+		return
+	}
+	utils.JsonSuccessResponse(c, nil)
+}
 
-
+//获得评论的回复列表
 type GetReplyData struct {
 	ReviewID uint64 `form:"review_id" binding:"required"`
 	Page     int    `form:"page"`

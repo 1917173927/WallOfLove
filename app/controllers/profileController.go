@@ -14,7 +14,7 @@ type updateProfileData struct {
 	Username         string  `json:"username"`
 	OriginalPassword string  `json:"original_password"`
 	Password         string  `json:"password" binding:"omitempty,min=8,max=16"`
-	Gender           *int    `json:"gender"`
+	Gender           *int    `json:"gender" binding:"omitempty,oneof=0 1 2"`
 	Signature        string  `json:"signature" binding:"max=80"`
 	AvatarPath       string  `json:"avatar_path"`
 }
@@ -58,8 +58,9 @@ func UpdateProfile(c *gin.Context) {
 		req.Password = user.Password
 	}
 	//若未填写性别，则用原值
-	if req.Gender == nil {
-		req.Gender = &user.Gender
+	gender := user.Gender
+	if req.Gender != nil {
+		gender = *req.Gender
 	}
 	//若未填写签名，则用原值
 	if req.Signature == "" {
@@ -75,7 +76,7 @@ func UpdateProfile(c *gin.Context) {
 		Nickname:      req.Nickname,
 		Username:      req.Username,
 		Password:      req.Password,
-		Gender:        *req.Gender,
+		Gender:        gender,
 		Signature:     req.Signature,
 		AvatarPath:    req.AvatarPath,
 	}

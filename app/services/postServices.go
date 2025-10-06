@@ -148,7 +148,7 @@ func GetPostsByUserID(userID uint64, page, pageSize int) ([]PostWithLike, int64,
 	return list, total, nil
 }
 
-// 根据用户id获取用户发布的表白
+// 获取自己发布的表白
 func GetMyPosts(userID uint64, page, pageSize int) ([]PostWithLike, int64, error) {
 	//总条数
 	var total int64

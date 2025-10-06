@@ -23,6 +23,7 @@ func Init() error {
 
 	return Rdb.Ping(Ctx).Err()
 }
+
 // 点赞数 +1 并返回最新值
 func IncrPostLike(postID, reviewID uint64) int64 {
 	count, _ := Rdb.Incr(Ctx, fmt.Sprintf("post:%d:review:%d:likes", postID, reviewID)).Result()
@@ -46,23 +47,23 @@ func DelUserLiked(postID, userID, reviewID uint64) {
 }
 
 // 读点赞数
-func GetPostLikeCount(postID,reviewID uint64) int64 {
-	key := fmt.Sprintf("post:%d:review:%d:likes", postID,reviewID)
+func GetPostLikeCount(postID, reviewID uint64) int64 {
+	key := fmt.Sprintf("post:%d:review:%d:likes", postID, reviewID)
 	//读缓存
 	if val, err := Rdb.Get(Ctx, key).Int64(); err == nil {
 		return val
 	}
 	//错误：读库
 	var cnt int64
-	database.DB.Model(&models.Like{}).Where("post_id = ? AND review_id = ?", postID,reviewID).Count(&cnt)
+	database.DB.Model(&models.Like{}).Where("post_id = ? AND review_id = ?", postID, reviewID).Count(&cnt)
 	//写回缓存
 	Rdb.Set(Ctx, key, cnt, 0)
 	return cnt
 }
 
 // 读是否已赞
-func IsUserLiked(postID, userID,reviewID uint64) bool {
-	key := fmt.Sprintf("post:%d:review:%d:liked:uid:%d", postID, userID,reviewID)
+func IsUserLiked(postID, userID, reviewID uint64) bool {
+	key := fmt.Sprintf("post:%d:review:%d:liked:uid:%d", postID, reviewID, userID)
 	//读缓存
 	if val, err := Rdb.Get(Ctx, key).Result(); err == nil {
 		return val == "1"
@@ -70,7 +71,7 @@ func IsUserLiked(postID, userID,reviewID uint64) bool {
 	//错误：读库
 	var like int64
 	database.DB.Model(&models.Like{}).
-		Where("user_id = ? AND post_id = ? AND review_id = ?", userID,reviewID,postID).
+		Where("user_id = ? AND post_id = ? AND review_id = ?", userID, postID, reviewID).
 		Count(&like)
 	//写回缓存
 	if like > 0 {
@@ -135,11 +136,12 @@ func GetReviewReplyCount(reviewID uint64) int64 {
 	return cnt
 }
 
-//浏览数+1 并返回最新值
+// 浏览数+1 并返回最新值
 func IncrView(postID uint64) int64 {
 	count, _ := Rdb.Incr(Ctx, fmt.Sprintf("post:%d:views", postID)).Result()
 	return count
 }
+
 // 读浏览数
 func GetPostViewCount(postID uint64) int64 {
 	key := fmt.Sprintf("post:%d:views", postID)

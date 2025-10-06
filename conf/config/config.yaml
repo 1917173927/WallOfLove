@@ -2,7 +2,7 @@ mysql:
   host: "localhost"
   port: 3306
   user: "root"
-  password: "coppklmja!BWZ"
+  password: "123456"
   dbname: "walloflove"
 
 image:

@@ -43,6 +43,7 @@ type ReviewWithLike struct {
 	LikedByMe    bool           `json:"liked_by_me"`
 	Replies      []models.Reply `json:"replies"`
 	RepliesCount int64          `json:"replies_count"`
+	Nickname     string         `json:"nickname"`
 }
 
 func GetVisibleReviews(postID uint64, userID uint64, page, pageSize int) ([]ReviewWithLike, int64, error) {
@@ -75,7 +76,21 @@ func GetVisibleReviews(postID uint64, userID uint64, page, pageSize int) ([]Revi
 		return nil, 0, err
 	}
 
-	//点赞数 + 是否已赞（redis）
+	// 收集所有评论的用户ID
+	userIDs := make([]uint64, 0, len(reviews))
+	for _, r := range reviews {
+		userIDs = append(userIDs, r.UserID)
+	}
+
+	// 批量获取用户昵称
+	nicknames := make(map[uint64]string)
+	for _, id := range userIDs {
+		user, err := GetUserDataByID(id)
+		if err == nil && user != nil {
+			nicknames[id] = user.Nickname
+		}
+	}
+
 	list := make([]ReviewWithLike, 0, len(reviews))
 	for _, r := range reviews {
 		likeCount := redis.GetPostLikeCount(postID, r.ID)    // 评论点赞 reviewID!=0
@@ -91,6 +106,7 @@ func GetVisibleReviews(postID uint64, userID uint64, page, pageSize int) ([]Revi
 			LikedByMe:    likedByMe,
 			RepliesCount: repliesCount,
 			Replies:      r.Replies,
+			Nickname:     nicknames[r.UserID],
 		})
 	}
 

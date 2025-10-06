@@ -78,7 +78,7 @@ type GetReplyData struct {
 	Page     int    `form:"page"`
 }
 type ReplyList struct {
-	Replies []models.Reply `json:"replies"`
+	Replies []services.ReplyWithNickname `json:"replies"`
 	Total   int64          `json:"total"`
 }
 func GetRepliesByReviewID(c *gin.Context) {

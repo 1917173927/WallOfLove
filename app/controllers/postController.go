@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"strconv"
 	"time"
 
 	"github.com/1917173927/WallOfLove/app/apiException"
@@ -274,12 +273,12 @@ type SinglePost struct {
 func GetSinglePost(c *gin.Context) {
 	uid, _ := c.Get("userID")
 	UID := uid.(uint64)
-	idStr := c.Param("id")
-	id, err := strconv.ParseUint(idStr, 10, 64)
-	if err != nil {
+	var req GetSinglePostData
+	if err := c.ShouldBindQuery(&req); err != nil {
 		apiException.AbortWithException(c, apiException.ParamError, err)
 		return
 	}
+	id := req.ID
 	post, err := services.GetSinglePost(id, UID)
 	if err != nil {
 		apiException.AbortWithException(c, apiException.ServerError, err)

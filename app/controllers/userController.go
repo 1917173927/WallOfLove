@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"errors"
-	"strings"
 
 	"github.com/1917173927/WallOfLove/app/apiException"
 	"github.com/1917173927/WallOfLove/app/middleware"
@@ -10,7 +9,7 @@ import (
 	"github.com/1917173927/WallOfLove/app/services"
 	"github.com/1917173927/WallOfLove/app/utils"
 	"github.com/gin-gonic/gin"
-	"github.com/go-playground/validator/v10"
+
 	"gorm.io/gorm"
 )
 

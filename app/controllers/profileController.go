@@ -29,7 +29,7 @@ func UpdateProfile(c *gin.Context) {
 		return
 	}
 	//获得用户原信息
-	user, err := services.GetUserDataByID(UID)
+	user, err := services.GetAllUserDataByID(UID)
 	if err != nil {
 		apiException.AbortWithException(c,apiException.ServerError,err)
 		return

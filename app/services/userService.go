@@ -63,7 +63,17 @@ func GetUserDataByID(userID uint64) (*models.User, error) {
 	}
 	return &user, nil
 }
-
+// 根据ID获取用户密码
+func GetAllUserDataByID(userID uint64) (*models.User, error) {
+	var user models.User
+	result := database.DB.
+		Where("id = ?", userID).
+		First(&user)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return &user, nil
+}
 // 更新用户信息
 func UpdateProfile(user *models.User) error {
 	return database.DB.Model(user).

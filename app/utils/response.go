@@ -32,4 +32,3 @@ func JsonSuccessResponse(c *gin.Context, data any) {
 func JsonErrorResponse(c *gin.Context, code int, msg string) {
 	JsonResponse(c, http.StatusOK, code, msg, nil)
 }
-

@@ -91,6 +91,12 @@ func GetReviewsByPostID(c *gin.Context) {
 		apiException.AbortWithException(c,apiException.ParamError,err)
 		return
 	}
+	if req.Page <= 0 {
+		req.Page = 1
+	}
+	if req.PageSize <= 0 {
+		req.PageSize = 10
+	}
 	err = services.GetReviewsByPostID(req.PostID)
 	if err != nil {
 		apiException.AbortWithException(c,apiException.TargetError,err)

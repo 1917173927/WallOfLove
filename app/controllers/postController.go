@@ -221,6 +221,12 @@ func GetPostsByUserID(c *gin.Context) {
 		apiException.AbortWithException(c, apiException.ParamError, err)
 		return
 	}
+	if req.PageNum <= 0 {
+		req.PageNum = 1
+	}
+	if req.PageSize <= 0 {
+		req.PageSize = 10
+	}
 	_, err = services.GetUserDataByID(req.UserID)
 	if err != nil {
 		apiException.AbortWithException(c, apiException.TargetError, err)

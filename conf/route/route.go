@@ -26,6 +26,7 @@ func Init(r *gin.Engine) {
 			auth.PUT("/post", controllers.UpdatePost)
 			auth.GET("/post/list", controllers.GetVisiblePosts)
 			auth.GET("/post/:id", controllers.GetSinglePost)
+			auth.GET("/post/user/:id", controllers.GetPostsByUserID)
 			auth.DELETE("/post", controllers.DeletePost)
 			auth.GET("/popranking", controllers.PopRanking)
 

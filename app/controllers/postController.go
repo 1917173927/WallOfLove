@@ -170,7 +170,6 @@ func GetVisiblePosts(c *gin.Context) {
 		apiException.AbortWithException(c, apiException.ParamError, err)
 		return
 	}
-	// set sensible defaults when client omits values
 	if req.PageNum <= 0 {
 		req.PageNum = 1
 	}

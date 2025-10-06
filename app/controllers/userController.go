@@ -27,25 +27,7 @@ func Register(c *gin.Context) {
 	var data RegisterData
 	err := c.ShouldBindJSON(&data)
 	if err != nil {
-		// try to extract validator errors for clearer message
-		var sb strings.Builder
-		if ve, ok := err.(validator.ValidationErrors); ok {
-			for i, fe := range ve {
-				if i > 0 {
-					sb.WriteString("; ")
-				}
-				sb.WriteString(fe.Field())
-				sb.WriteString(": ")
-				sb.WriteString(fe.Tag())
-			}
-		}
-		msg := err.Error()
-		if sb.Len() > 0 {
-			msg = sb.String()
-		}
-		// wrap the detailed message into a new api error so it is returned to client
-		newApiErr := apiException.NewError(apiException.PwdOrParamError.Code, apiException.PwdOrParamError.Level, msg)
-		apiException.AbortWithException(c, newApiErr, errors.New(msg))
+		apiException.AbortWithException(c, apiException.ParamError, err)
 		return
 	}
 	//判断账号是否已经存在

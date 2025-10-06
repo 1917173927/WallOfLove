@@ -78,8 +78,8 @@ type GetReplyData struct {
 	Page     int    `form:"page"`
 }
 type ReplyList struct {
-	Replies []services.ReplyWithNickname `json:"replies"`
-	Total   int64          `json:"total"`
+	Replies []models.ReplyWithNickname `json:"replies"`
+	Total   int64                      `json:"total"`
 }
 func GetRepliesByReviewID(c *gin.Context) {
 	const pageSize = 10 

@@ -1,15 +1,15 @@
 package services
 
 import (
+	"time"
+
 	"github.com/1917173927/WallOfLove/app/models"
 	"github.com/1917173927/WallOfLove/conf/database"
 	"github.com/robfig/cron/v3"
-	"time"
 )
 
 func StartScheduler() {
 	c := cron.New()
-	// 30s检查一次
 	_, _ = c.AddFunc("@every 0.5m", checkAndPublishScheduledPosts)
 	c.Start()
 }

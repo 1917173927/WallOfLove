@@ -23,43 +23,35 @@ type RegisterData struct {
 
 // 注册
 func Register(c *gin.Context) {
-	var data RegisterData
-	err := c.ShouldBindJSON(&data)
-	if err != nil {
+	var req RegisterData
+	if err := c.ShouldBindJSON(&req); err != nil {
 		apiException.AbortWithException(c, apiException.ParamError, err)
 		return
 	}
-	//判断账号是否已经存在
-	err = services.CheckUsername(data.Username)
-	if err == nil {
+	if err := services.CheckUsername(req.Username); err == nil {
 		apiException.AbortWithException(c, apiException.UserAlreadyExisted, err)
 		return
 	} else if err != gorm.ErrRecordNotFound {
 		apiException.AbortWithException(c, apiException.ServerError, err)
 		return
 	}
-	//哈希加密密码
-	hash, err := services.HashPassword(data.Password)
+	hash, err := services.HashPassword(req.Password)
 	if err != nil {
 		apiException.AbortWithException(c, apiException.ServerError, err)
 		return
 	}
-	data.Password = hash
-	//若未上传头像，则用默认头像
-	if data.AvatarPath == "" {
-		defaultID := "images/default/default.jpg"
-		data.AvatarPath = defaultID
+	req.Password = hash
+	if req.AvatarPath == "" {
+		req.AvatarPath = "images/default/default.jpg"
 	}
-	//注册用户
-	err = services.Register(models.User{
-		Username:   data.Username,
-		Nickname:   data.Nickname,
+	if err := services.Register(models.User{
+		Username:   req.Username,
+		Nickname:   req.Nickname,
 		Password:   hash,
-		Gender:     data.Gender,
+		Gender:     req.Gender,
 		Signature:  "这个人很神秘，什么都没有写",
-		AvatarPath: data.AvatarPath,
-	})
-	if err != nil {
+		AvatarPath: req.AvatarPath,
+	}); err != nil {
 		apiException.AbortWithException(c, apiException.ServerError, err)
 		return
 	}
@@ -78,14 +70,12 @@ type Logdata struct {
 
 // 接收参数
 func Login(c *gin.Context) {
-	var data LoginData
-	err := c.ShouldBindJSON(&data)
-	if err != nil {
+	var req LoginData
+	if err := c.ShouldBindJSON(&req); err != nil {
 		apiException.AbortWithException(c, apiException.ParamError, err)
 		return
 	}
-	//检查是否有此用户
-	user, err := services.GetUser(data.Username)
+	user, err := services.GetUser(req.Username)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			apiException.AbortWithException(c, apiException.NotFindUser, err)
@@ -94,20 +84,17 @@ func Login(c *gin.Context) {
 		}
 		return
 	}
-	// 密码比对
-	if err := services.CompareHash(data.Password, user.Password); err != nil {
+	if err := services.CompareHash(req.Password, user.Password); err != nil {
 		apiException.AbortWithException(c, apiException.NoThatPasswordOrWrong, err)
 		return
 	}
-	//生成token
 	token, err := middleware.GenerateToken(user.ID)
 	if err != nil {
 		apiException.AbortWithException(c, apiException.ServerError, err)
 		return
 	}
-	logdata := Logdata{
+	utils.JsonSuccessResponse(c, Logdata{
 		ID:    uint64(user.ID),
 		Token: token,
-	}
-	utils.JsonSuccessResponse(c, logdata)
+	})
 }

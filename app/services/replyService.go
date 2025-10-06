@@ -13,12 +13,7 @@ func CreateReply(reply *models.Reply) error {
 	return database.DB.Create(reply).Error
 }
 
-type ReplyWithNickname struct {
-	models.Reply
-	Nickname string `json:"nickname"`
-}
-
-func GetRepliesByReviewID(reviewID uint64, userID uint64, page int, pageSize int) ([]ReplyWithNickname, int64, error) {
+func GetRepliesByReviewID(reviewID uint64, userID uint64, page int, pageSize int) ([]models.ReplyWithNickname, int64, error) {
 	sub, _ := utils.GetBlackListIDs(userID)
 	var total int64
 
@@ -50,21 +45,31 @@ func GetRepliesByReviewID(reviewID uint64, userID uint64, page int, pageSize int
 		userIDs = append(userIDs, r.UserID)
 	}
 
-	// 批量获取用户昵称
-	nicknames := make(map[uint64]string)
+	// 批量获取用户信息
+	userInfos := make(map[uint64]struct {
+		Nickname   string
+		AvatarPath string
+	})
 	for _, id := range userIDs {
 		user, err := GetUserDataByID(id)
 		if err == nil && user != nil {
-			nicknames[id] = user.Nickname
+			userInfos[id] = struct {
+				Nickname   string
+				AvatarPath string
+			}{
+				Nickname:   user.Nickname,
+				AvatarPath: user.AvatarPath,
+			}
 		}
 	}
 
 	// 创建返回结果
-	list := make([]ReplyWithNickname, 0, len(replies))
+	list := make([]models.ReplyWithNickname, 0, len(replies))
 	for _, r := range replies {
-		list = append(list, ReplyWithNickname{
-			Reply:    r,
-			Nickname: nicknames[r.UserID],
+		list = append(list, models.ReplyWithNickname{
+			Reply:      r,
+			Nickname:   userInfos[r.UserID].Nickname,
+			AvatarPath: userInfos[r.UserID].AvatarPath,
 		})
 	}
 

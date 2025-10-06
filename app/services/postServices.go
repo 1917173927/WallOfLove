@@ -7,9 +7,7 @@ import (
 	"github.com/1917173927/WallOfLove/conf/redis"
 )
 
-// 创建帖子
 func CreatePost(post *models.Post) error {
-	// 如果未设置发布时间，则立即发布
 	if post.ScheduledAt == nil {
 		post.IsPublished = false
 	}
@@ -231,4 +229,3 @@ func GetSinglePost(postID, userID uint64) (SinglePost, error) {
 	}
 	return list, nil
 }
-		

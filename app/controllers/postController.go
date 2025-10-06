@@ -22,12 +22,12 @@ func CreatePost(c *gin.Context) {
 	var req PostData
 
 	uid, _ := c.Get("userID")
-	UID := uid.(uint64)
+	userID := uid.(uint64)
 	if err := c.ShouldBindJSON(&req); err != nil {
 		apiException.AbortWithException(c, apiException.ParamError, err)
 		return
 	}
-	user, err := services.GetUserDataByID(UID)
+	user, err := services.GetUserDataByID(userID)
 	if err != nil {
 		apiException.AbortWithException(c, apiException.ServerError, err)
 		return
@@ -36,36 +36,36 @@ func CreatePost(c *gin.Context) {
 		apiException.AbortWithException(c, apiException.EmptyError, nil)
 		return
 	}
-	if err := services.CreatePost(&models.Post{
-		UserID:       UID,
+	post := &models.Post{
+		UserID:       userID,
 		Content:      req.Content,
 		Anonymous:    req.Anonymous,
 		Visibility:   req.Visibility,
 		UserNickname: user.Nickname,
 		AvatarPath:   user.AvatarPath,
 		ScheduledAt:  req.ScheduledAt,
-	}); err != nil {
+	}
+	if err := services.CreatePost(post); err != nil {
 		apiException.AbortWithException(c, apiException.ServerError, err)
 		return
 	}
-
-	utils.JsonSuccessResponse(c, req)
+	utils.JsonSuccessResponse(c, gin.H{"post_id": post.ID})
 }
 
 // 更新帖子
 type UpdatePostData struct {
-	ID         uint64 `json:"id" binding:"required"`
-	Content    string `json:"content"`
-	Anonymous  *bool  `json:"anonymous"`  //bool值不能为空，只能通过传指针来判断
-	Visibility *bool  `json:"visibility"` //同上
+	ID          uint64 `json:"id" binding:"required"`
+	Content     string `json:"content"`
+	Anonymous   *bool  `json:"anonymous"`  //bool值不能为空，只能通过传指针来判断
+	Visibility  *bool  `json:"visibility"` //同上
+	IsPublished *bool  `json:"is_published"`
 }
 
 func UpdatePost(c *gin.Context) {
 	uid, _ := c.Get("userID")
-	UID := uid.(uint64)
+	userID := uid.(uint64)
 	var req UpdatePostData
-	err := c.ShouldBindJSON(&req)
-	if err != nil {
+	if err := c.ShouldBindJSON(&req); err != nil {
 		apiException.AbortWithException(c, apiException.ParamError, err)
 		return
 	}
@@ -74,43 +74,33 @@ func UpdatePost(c *gin.Context) {
 		apiException.AbortWithException(c, apiException.TargetError, err)
 		return
 	}
-	// 检查是否有权限修改帖子
-	if UID != post.UserID {
+	if userID != post.UserID {
 		apiException.AbortWithException(c, apiException.NotPermission, nil)
 		return
 	}
-	//若未填写内容，则用原值
-	if req.Content == "" {
-		req.Content = post.Content
+	content := req.Content
+	if content == "" {
+		content = post.Content
 	}
-	//转指针
-	var anonymous bool
-	var visibility bool
-	//若未填写匿名，则用原值
-	if req.Anonymous == nil {
-		anonymous = post.Anonymous
-	} else {
+	anonymous := post.Anonymous
+	if req.Anonymous != nil {
 		anonymous = *req.Anonymous
 	}
-	//若未填写可见性，则用原值
-	if req.Visibility == nil {
-		visibility = post.Visibility
-	} else {
+	visibility := post.Visibility
+	if req.Visibility != nil {
 		visibility = *req.Visibility
 	}
-
 	updatedPost := models.Post{
 		ID:           req.ID,
-		UserID:       UID,
-		Content:      req.Content,
+		UserID:       userID,
+		Content:      content,
 		Anonymous:    anonymous,
 		Visibility:   visibility,
 		UserNickname: post.UserNickname,
 		AvatarPath:   post.AvatarPath,
+		IsPublished:  true,
 	}
-	//更新表白信息
-	err = services.UpdatePost(&updatedPost)
-	if err != nil {
+	if err := services.UpdatePost(&updatedPost); err != nil {
 		apiException.AbortWithException(c, apiException.ServerError, err)
 		return
 	}
@@ -124,25 +114,22 @@ type DeletePostData struct {
 
 func DeletePost(c *gin.Context) {
 	uid, _ := c.Get("userID")
-	UID := uid.(uint64)
+	userID := uid.(uint64)
 	var req DeletePostData
-	err := c.ShouldBindJSON(&req)
-	if err != nil {
+	if err := c.ShouldBindJSON(&req); err != nil {
 		apiException.AbortWithException(c, apiException.ParamError, err)
 		return
 	}
-	originalPost, err := services.GetPostDataByID(req.ID)
+	post, err := services.GetPostDataByID(req.ID)
 	if err != nil {
 		apiException.AbortWithException(c, apiException.TargetError, err)
 		return
 	}
-	// 检查是否有权限删除帖子
-	if originalPost.UserID != UID {
+	if post.UserID != userID {
 		apiException.AbortWithException(c, apiException.NotPermission, nil)
 		return
 	}
-	err = services.DeletePost(req.ID)
-	if err != nil {
+	if err := services.DeletePost(req.ID); err != nil {
 		apiException.AbortWithException(c, apiException.ServerError, err)
 		return
 	}
@@ -162,10 +149,9 @@ type PostWithPaths struct {
 
 func GetVisiblePosts(c *gin.Context) {
 	uid, _ := c.Get("userID")
-	UID := uid.(uint64)
+	userID := uid.(uint64)
 	var req PageData
-	err := c.ShouldBindQuery(&req)
-	if err != nil {
+	if err := c.ShouldBindQuery(&req); err != nil {
 		apiException.AbortWithException(c, apiException.ParamError, err)
 		return
 	}
@@ -175,12 +161,11 @@ func GetVisiblePosts(c *gin.Context) {
 	if req.PageSize <= 0 {
 		req.PageSize = 10
 	}
-	posts, total, err := services.GetVisiblePosts(UID, req.PageNum, req.PageSize)
+	posts, total, err := services.GetVisiblePosts(userID, req.PageNum, req.PageSize)
 	if err != nil {
 		apiException.AbortWithException(c, apiException.ServerError, err)
 		return
 	}
-	//匿名
 	for i := range posts {
 		if posts[i].Anonymous {
 			posts[i].UserID = 0
@@ -188,12 +173,11 @@ func GetVisiblePosts(c *gin.Context) {
 			posts[i].AvatarPath = "images/default/anonymous.png"
 		}
 	}
-	// 拼图片路径
 	out := make([]PostWithPaths, 0, len(posts))
 	for _, p := range posts {
 		paths := make([]string, 0, len(p.Images))
 		for _, img := range p.Images {
-			paths = append(paths, img.FilePath) // 只拿路径
+			paths = append(paths, img.FilePath)
 		}
 		out = append(out, PostWithPaths{
 			Post:       p,
@@ -206,17 +190,16 @@ func GetVisiblePosts(c *gin.Context) {
 
 // 获取指定用户发布的表白
 type GetPostsByUserIDData struct {
-	UserID uint64 `form:"user_id" binding:"required"`
-	PageSize int `form:"page_size"`
-	PageNum  int `form:"page_num"`
+	UserID   uint64 `form:"user_id" binding:"required"`
+	PageSize int    `form:"page_size"`
+	PageNum  int    `form:"page_num"`
 }
 
 func GetPostsByUserID(c *gin.Context) {
 	uid, _ := c.Get("userID")
-	UID := uid.(uint64)
+	userID := uid.(uint64)
 	var req GetPostsByUserIDData
-	err := c.ShouldBind(&req)
-	if err != nil {
+	if err := c.ShouldBind(&req); err != nil {
 		apiException.AbortWithException(c, apiException.ParamError, err)
 		return
 	}
@@ -226,32 +209,32 @@ func GetPostsByUserID(c *gin.Context) {
 	if req.PageSize <= 0 {
 		req.PageSize = 10
 	}
-	_, err = services.GetUserDataByID(req.UserID)
-	if err != nil {
+	if _, err := services.GetUserDataByID(req.UserID); err != nil {
 		apiException.AbortWithException(c, apiException.TargetError, err)
 		return
 	}
 	var posts []services.PostWithLike
 	var total int64
-	if req.UserID == UID {
+	if req.UserID == userID {
+		var err error
 		posts, total, err = services.GetMyPosts(req.UserID, req.PageNum, req.PageSize)
 		if err != nil {
 			apiException.AbortWithException(c, apiException.ServerError, err)
 			return
 		}
 	} else {
+		var err error
 		posts, total, err = services.GetPostsByUserID(req.UserID, req.PageNum, req.PageSize)
 		if err != nil {
 			apiException.AbortWithException(c, apiException.ServerError, err)
 			return
 		}
 	}
-	// 拼图片路径
 	out := make([]PostWithPaths, 0, len(posts))
 	for _, p := range posts {
 		paths := make([]string, 0, len(p.Images))
 		for _, img := range p.Images {
-			paths = append(paths, img.FilePath) // 只拿路径
+			paths = append(paths, img.FilePath)
 		}
 		out = append(out, PostWithPaths{
 			Post:       p,
@@ -261,7 +244,8 @@ func GetPostsByUserID(c *gin.Context) {
 	}
 	utils.JsonSuccessResponse(c, out)
 }
-//获得单个帖子
+
+// 获得单个帖子
 type GetSinglePostData struct {
 	ID uint64 `form:"post_id" binding:"required"`
 }
@@ -272,15 +256,13 @@ type SinglePost struct {
 
 func GetSinglePost(c *gin.Context) {
 	uid, _ := c.Get("userID")
-	UID := uid.(uint64)
+	userID := uid.(uint64)
 	var req GetSinglePostData
-	err := c.ShouldBind(&req)
-	if err != nil {
+	if err := c.ShouldBind(&req); err != nil {
 		apiException.AbortWithException(c, apiException.ParamError, err)
 		return
 	}
-	id := req.ID
-	post, err := services.GetSinglePost(id, UID)
+	post, err := services.GetSinglePost(req.ID, userID)
 	if err != nil {
 		apiException.AbortWithException(c, apiException.ServerError, err)
 		return
@@ -302,6 +284,6 @@ func GetSinglePost(c *gin.Context) {
 }
 
 type ConfirmPostData struct {
-	PostID     uint64 `form:"post_id" binding:"required"`
+	PostID      uint64 `form:"post_id" binding:"required"`
 	IsPublished bool   `form:"is_published" binding:"required"`
 }

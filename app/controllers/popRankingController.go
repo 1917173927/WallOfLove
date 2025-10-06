@@ -9,10 +9,10 @@ import (
 
 func PopRanking(c *gin.Context) {
 	uid, _ := c.Get("userID")
-	UID := uid.(uint64)
-	rank, err := services.GetPopRanking(UID)
+	userID := uid.(uint64)
+	rank, err := services.GetPopRanking(userID)
 	if err != nil {
-		apiException.AbortWithException(c,apiException.ServerError,err)
+		apiException.AbortWithException(c, apiException.ServerError, err)
 		return
 	}
 	utils.JsonSuccessResponse(c, rank)

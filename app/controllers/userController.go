@@ -14,9 +14,9 @@ import (
 
 type RegisterData struct {
 	Username      string  `json:"username"        binding:"required"`
-	Name          string  `json:"name"            binding:"required"`
+	Nikename      string  `json:"nikename"        binding:"required"`
 	Password      string  `json:"password"        binding:"required,min=8,max=16"`
-	Gender        int     `json:"gender"          binding:"required"` //0:男，1:女，2:保密
+	Gender        int     `json:"gender"          binding:"required, oneof=0 1 2"` //0:男，1:女，2:保密
 	AvatarPath    string  `json:"avatar_path"`
 }
 
@@ -52,7 +52,7 @@ func Register(c *gin.Context) {
 	//注册用户
 	err = services.Register(models.User{
 		Username:      data.Username,
-		Nickname:      data.Name,
+		Nickname:      data.Nikename,
 		Password:      hash,
 		Gender:        data.Gender,
 		Signature:     "这个人很神秘，什么都没有写",

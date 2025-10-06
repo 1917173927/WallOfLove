@@ -16,9 +16,12 @@ func Like(userID, postID,reviewID uint64) (liked bool, err error) {
 
 		//同步删库
 		if err:= database.DB.Where("user_id = ? AND post_id = ? AND review_id = ?", userID, postID, reviewID).Delete(&models.Like{}).Error; err!= nil {
+			// 库删失败 → 回滚缓存
+			redis.SetUserLiked(postID, reviewID, userID)
+			redis.IncrPostLike(postID, reviewID)
 			return false, err
 		}
-		}else {
+	} else {
 		// 点赞
 		redis.SetUserLiked(postID,reviewID,userID)
 		redis.IncrPostLike(postID,reviewID)
@@ -26,6 +29,9 @@ func Like(userID, postID,reviewID uint64) (liked bool, err error) {
 
 		//同步写库
 		if err:= database.DB.Create(&models.Like{UserID: userID, PostID: postID, ReviewID: reviewID}).Error; err!= nil {
+			// 库插失败 → 回滚缓存
+			redis.DelUserLiked(postID, reviewID, userID)
+			redis.DecrPostLike(postID, reviewID)
 			return true, err
 		}
 	}

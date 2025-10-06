@@ -40,7 +40,7 @@ var (
 	NotImage            = NewError(200520, log.LevelInfo, "不是图片")
 	ImageNotFound       = NewError(200521, log.LevelInfo, "图片不存在")
 	ImageDeleteFailed   = NewError(200522, log.LevelInfo, "图片删除失败")
-
+	
 
 	NotFound = NewError(200404, log.LevelWarn, http.StatusText(http.StatusNotFound))
 )

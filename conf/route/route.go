@@ -45,6 +45,7 @@ func Init(r *gin.Engine) {
 			auth.DELETE("/image", controllers.DeleteImage)
 
 			auth.POST("/like", controllers.LikePost)
+			auth.PUT("/post/confirm", controllers.ConfirmPost)
 		}
 	}
 }

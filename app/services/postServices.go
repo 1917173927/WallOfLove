@@ -229,3 +229,9 @@ func GetSinglePost(postID, userID uint64) (SinglePost, error) {
 	}
 	return list, nil
 }
+
+func UpdatePostPublishedStatus(postID uint64, published bool) error {
+	return database.DB.Model(&models.Post{}).
+		Where("id = ?", postID).
+		Update("is_published", published).Error
+}

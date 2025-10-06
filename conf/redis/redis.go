@@ -3,7 +3,6 @@ package redis
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/1917173927/WallOfLove/app/models"
 	"github.com/1917173927/WallOfLove/conf/database"
@@ -22,17 +21,7 @@ func Init() error {
 		DB:       0,
 	})
 
-	// Try to ping Redis with retries
-	var err error
-	for i := 0; i < 3; i++ {
-		if err = Rdb.Ping(Ctx).Err(); err == nil {
-			return nil
-		}
-		// Wait before retrying
-		time.Sleep(time.Second * 2)
-	}
-	
-	return fmt.Errorf("failed to connect to Redis after 3 attempts: %v", err)
+	return Rdb.Ping(Ctx).Err()
 }
 // 点赞数 +1 并返回最新值
 func IncrPostLike(postID, reviewID uint64) int64 {

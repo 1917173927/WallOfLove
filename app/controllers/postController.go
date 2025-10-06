@@ -274,7 +274,8 @@ func GetSinglePost(c *gin.Context) {
 	uid, _ := c.Get("userID")
 	UID := uid.(uint64)
 	var req GetSinglePostData
-	if err := c.ShouldBindQuery(&req); err != nil {
+	err := c.ShouldBind(&req)
+	if err != nil {
 		apiException.AbortWithException(c, apiException.ParamError, err)
 		return
 	}
@@ -298,4 +299,38 @@ func GetSinglePost(c *gin.Context) {
 		ImagePaths: paths,
 	}
 	utils.JsonSuccessResponse(c, out)
+}
+
+type ConfirmPostData struct {
+	PostID     uint64 `form:"post_id" binding:"required"`
+	IsPublished bool   `form:"is_published" binding:"required"`
+}
+
+func ConfirmPost(c *gin.Context) {
+	uid, _ := c.Get("userID")
+	UID := uid.(uint64)
+	
+	var req ConfirmPostData
+	if err := c.ShouldBind(&req); err != nil {
+		apiException.AbortWithException(c, apiException.ParamError, err)
+		return
+	}
+
+	post, err := services.GetPostDataByID(req.PostID)
+	if err != nil {
+		apiException.AbortWithException(c, apiException.TargetError, err)
+		return
+	}
+	if post.UserID != UID {
+		apiException.AbortWithException(c, apiException.NotPermission, nil)
+		return
+	}
+
+	if err := services.UpdatePostPublishedStatus(req.PostID, true); err != nil {
+		apiException.AbortWithException(c, apiException.ServerError, err)
+		return
+	}
+
+	utils.JsonSuccessResponse(c, nil)
+
 }

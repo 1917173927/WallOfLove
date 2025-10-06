@@ -20,13 +20,13 @@ func Init(r *gin.Engine) {
 		auth.Use(middleware.JWT())
 		{
 			auth.PUT("/profile", controllers.UpdateProfile)
-			auth.GET("/profile/:user_id", controllers.GetProfile)
+			auth.GET("/profile", controllers.GetProfile)
 
 			auth.POST("/post", controllers.CreatePost)
 			auth.PUT("/post", controllers.UpdatePost)
 			auth.GET("/post/list", controllers.GetVisiblePosts)
-			auth.GET("/post/:post_id", controllers.GetSinglePost)
-			auth.GET("/post/:user_id", controllers.GetPostsByUserID)
+			auth.GET("/post", controllers.GetSinglePost)
+			auth.GET("/post/user", controllers.GetPostsByUserID)
 			auth.DELETE("/post", controllers.DeletePost)
 			auth.GET("/popranking", controllers.PopRanking)
 

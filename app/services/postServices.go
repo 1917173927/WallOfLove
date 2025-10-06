@@ -1,8 +1,6 @@
 package services
 
 import (
-	"log"
-
 	"github.com/1917173927/WallOfLove/app/models"
 	"github.com/1917173927/WallOfLove/app/utils"
 	"github.com/1917173927/WallOfLove/conf/database"
@@ -49,8 +47,6 @@ type PostWithLike struct {
 
 func GetVisiblePosts(userID uint64, page, pageSize int) ([]PostWithLike, int64, error) {
 	sub, _ := utils.GetBlackListIDs(userID)
-	log.Printf("GetVisiblePosts: userID=%d blacklistedIDs=%v page=%d pageSize=%d", userID, sub, page, pageSize)
-
 	//总条数
 	var total int64
 	countDB := database.DB.Model(&models.Post{}).
@@ -71,7 +67,6 @@ func GetVisiblePosts(userID uint64, page, pageSize int) ([]PostWithLike, int64, 
 	err := q.Order("created_at desc").
 		Scopes(utils.Paginate(page, pageSize)).
 		Find(&posts).Error
-	log.Printf("GetVisiblePosts: query returned %d rows (err=%v)", len(posts), err)
 	if err != nil {
 		return nil, 0, err
 	}

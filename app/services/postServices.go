@@ -11,7 +11,7 @@ import (
 func CreatePost(post *models.Post) error {
 	// 如果未设置发布时间，则立即发布
 	if post.ScheduledAt == nil {
-		post.IsPublished = true
+		post.IsPublished = false
 	}
 	return database.DB.Create(post).Error
 }
@@ -23,11 +23,12 @@ func GetPostDataByID(postID uint64) (*models.Post, error) {
 	if result.Error != nil {
 		return nil, result.Error
 	}
+
 	return &post, nil
 }
 func UpdatePost(post *models.Post) error {
 	return database.DB.Model(post).
-		Select("content", "anonymous", "visibility").
+		Select("content", "anonymous", "visibility", "is_published").
 		Updates(post).Error
 }
 
@@ -60,7 +61,8 @@ func GetVisiblePosts(userID uint64, page, pageSize int) ([]PostWithLike, int64, 
 	var posts []models.Post
 	q := database.DB.
 		Preload("Images").
-		Where("visibility = ?", true)
+		Where("visibility = ?", true).
+		Where("is_published = ?", true)
 	if len(sub) > 0 {
 		q = q.Where("user_id NOT IN (?)", sub)
 	}
@@ -229,9 +231,4 @@ func GetSinglePost(postID, userID uint64) (SinglePost, error) {
 	}
 	return list, nil
 }
-
-func UpdatePostPublishedStatus(postID uint64, published bool) error {
-	return database.DB.Model(&models.Post{}).
-		Where("id = ?", postID).
-		Update("is_published", published).Error
-}
+		

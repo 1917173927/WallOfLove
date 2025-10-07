@@ -1,4 +1,3 @@
-// Package services 包含所有业务逻辑处理，负责与数据库交互和核心业务逻辑的实现。
 package services
 
 import (
@@ -22,20 +21,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// UploadImage 处理图片上传的核心逻辑，包括以下步骤：
-// 1. 验证文件类型和大小
-// 2. 生成唯一的文件名并保存到指定目录
-// 3. 将图片信息保存到数据库
-// 4. 返回图片的访问路径或错误信息
-
-// UploadImage 处理图片上传逻辑，执行以下操作：
-// 1. 验证文件类型和大小
-// 2. 计算文件哈希值
-// 3. 检查是否已存在相同图片
-// 4. 如果不存在则保存新文件
-// 5. 记录文件信息到数据库
-// 6. 返回文件信息或错误
-// UploadImage handles image upload and returns the saved Image record.
+// 图片上传
 func UploadImage(c *gin.Context, userID uint64, username string, postID string, isAvatar string, file *multipart.FileHeader) (*models.Image, error) {
 	// 检查图片大小
 	maxSize := config.Config.GetInt64("image.max_size")
@@ -173,32 +159,19 @@ func UploadImage(c *gin.Context, userID uint64, username string, postID string, 
 	return image, nil
 }
 
-// DeleteImage 删除图片及其数据库记录
-// 1. 根据ID获取图片信息
-// 2. 验证操作权限
-// 3. 删除物理文件
-// 4. 删除数据库记录
 func DeleteImage(imageID uint64, userID uint64) error {
-	// 获取图片信息
 	var image models.Image
 	if err := database.DB.Where("id = ?", imageID).First(&image).Error; err != nil {
 		return apiException.ImageNotFound
 	}
-
-	// 验证操作权限
 	if image.UserID != userID {
 		return apiException.NotPermission
 	}
-
-	// 删除物理文件
 	if err := os.Remove(image.FilePath); err != nil && !os.IsNotExist(err) {
 		return err
 	}
-
-	// 删除数据库记录
 	if err := database.DB.Delete(&image).Error; err != nil {
 		return err
 	}
-
 	return nil
 }

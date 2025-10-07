@@ -13,7 +13,7 @@ func CreateReply(reply *models.Reply) error {
 	return database.DB.Create(reply).Error
 }
 
-func GetRepliesByReviewID(reviewID uint64, userID uint64, page int, pageSize int) ([]models.Reply, int64, error) {
+func GetRepliesByReviewID(reviewID uint64, userID uint64, page int, pageSize int) ([]models.ReplyWithNickname, int64, error) {
 	sub, _ := utils.GetBlackListIDs(userID)
 	var total int64
 
@@ -24,7 +24,8 @@ func GetRepliesByReviewID(reviewID uint64, userID uint64, page int, pageSize int
 	}
 	countDB.Count(&total)
 
-	var list []models.Reply
+	// 获取原始回复列表
+	var replies []models.Reply
 	q := database.DB.
 		Where("review_id = ?", reviewID)
 	if len(sub) > 0 {
@@ -33,8 +34,46 @@ func GetRepliesByReviewID(reviewID uint64, userID uint64, page int, pageSize int
 	err := q.
 		Order("created_at desc").
 		Scopes(utils.Paginate(page, pageSize)).
-		Find(&list).Error
-	return list, total, err
+		Find(&replies).Error
+	if err != nil {
+		return nil, 0, err
+	}
+
+	// 收集所有回复的用户ID
+	userIDs := make([]uint64, 0, len(replies))
+	for _, r := range replies {
+		userIDs = append(userIDs, r.UserID)
+	}
+
+	// 批量获取用户信息
+	userInfos := make(map[uint64]struct {
+		Nickname   string
+		AvatarPath string
+	})
+	for _, id := range userIDs {
+		user, err := GetUserDataByID(id)
+		if err == nil && user != nil {
+			userInfos[id] = struct {
+				Nickname   string
+				AvatarPath string
+			}{
+				Nickname:   user.Nickname,
+				AvatarPath: user.AvatarPath,
+			}
+		}
+	}
+
+	// 创建返回结果
+	list := make([]models.ReplyWithNickname, 0, len(replies))
+	for _, r := range replies {
+		list = append(list, models.ReplyWithNickname{
+			Reply:      r,
+			Nickname:   userInfos[r.UserID].Nickname,
+			AvatarPath: userInfos[r.UserID].AvatarPath,
+		})
+	}
+
+	return list, total, nil
 }
 
 // 删除回复

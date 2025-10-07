@@ -39,10 +39,12 @@ func GetReviewByReviewID(ReviewID uint64) (*models.Review, error) {
 // 获得所有评论and每条评论的前两条回复
 type ReviewWithLike struct {
 	models.Review
-	LikeCount    int64          `json:"like_count"`
-	LikedByMe    bool           `json:"liked_by_me"`
-	Replies      []models.Reply `json:"replies"`
-	RepliesCount int64          `json:"replies_count"`
+	LikeCount    int64                     `json:"like_count"`
+	LikedByMe    bool                      `json:"liked_by_me"`
+	Replies      []models.ReplyWithNickname `json:"replies"`
+	RepliesCount int64               `json:"replies_count"`
+	Nickname     string              `json:"nickname"`
+	AvatarPath   string              `json:"avatarPath"`
 }
 
 func GetVisibleReviews(postID uint64, userID uint64, page, pageSize int) ([]ReviewWithLike, int64, error) {
@@ -75,7 +77,30 @@ func GetVisibleReviews(postID uint64, userID uint64, page, pageSize int) ([]Revi
 		return nil, 0, err
 	}
 
-	//点赞数 + 是否已赞（redis）
+	// 收集所有评论的用户ID
+	userIDs := make([]uint64, 0, len(reviews))
+	for _, r := range reviews {
+		userIDs = append(userIDs, r.UserID)
+	}
+
+	// 批量获取用户信息
+	userInfos := make(map[uint64]struct {
+		Nickname   string
+		AvatarPath string
+	})
+	for _, id := range userIDs {
+		user, err := GetUserDataByID(id)
+		if err == nil && user != nil {
+			userInfos[id] = struct {
+				Nickname   string
+				AvatarPath string
+			}{
+				Nickname:   user.Nickname,
+				AvatarPath: user.AvatarPath,
+			}
+		}
+	}
+
 	list := make([]ReviewWithLike, 0, len(reviews))
 	for _, r := range reviews {
 		likeCount := redis.GetPostLikeCount(postID, r.ID)    // 评论点赞 reviewID!=0
@@ -85,12 +110,23 @@ func GetVisibleReviews(postID uint64, userID uint64, page, pageSize int) ([]Revi
 		// 过滤被拉黑回复
 		filterReplies(&r, sub)
 
+		// 处理回复数据，添加昵称
+		replyList := make([]models.ReplyWithNickname, 0, len(r.Replies))
+		for _, reply := range r.Replies {
+			replyList = append(replyList, models.ReplyWithNickname{
+				Reply:    reply,
+				Nickname: userInfos[reply.UserID].Nickname,
+			})
+		}
+
 		list = append(list, ReviewWithLike{
 			Review:       r,
 			LikeCount:    likeCount,
 			LikedByMe:    likedByMe,
 			RepliesCount: repliesCount,
-			Replies:      r.Replies,
+			Replies:      replyList,
+			Nickname:     userInfos[r.UserID].Nickname,
+			AvatarPath:   userInfos[r.UserID].AvatarPath,
 		})
 	}
 

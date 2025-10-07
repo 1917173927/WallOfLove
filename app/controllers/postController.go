@@ -184,7 +184,7 @@ func GetVisiblePosts(c *gin.Context) {
 	for i := range posts {
 		if posts[i].Anonymous {
 			posts[i].UserID = 0
-			posts[i].UserNickname = "?"
+			posts[i].UserNickname = "匿名用户"
 			posts[i].AvatarPath = "images/default/anonymous.png"
 		}
 	}
@@ -287,7 +287,7 @@ func GetSinglePost(c *gin.Context) {
 	}
 	if post.Anonymous {
 		post.UserID = 0
-		post.UserNickname = "?"
+		post.UserNickname = "匿名用户"
 		post.AvatarPath = "images/default/anonymous.png"
 	}
 	paths := make([]string, 0, len(post.Images))

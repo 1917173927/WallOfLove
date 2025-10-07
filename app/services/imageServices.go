@@ -21,9 +21,14 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// 图片上传
-func UploadImage(c *gin.Context, userID uint64, username string, postID string, isAvatar string, file *multipart.FileHeader) (*models.Image, error) {
-	// 检查图片大小
+func toURLPath(p string) string {
+	s := filepath.ToSlash(p)
+	s = strings.TrimPrefix(s, "./")
+	return strings.TrimPrefix(s, "/")
+}
+
+//尺寸校验 -> 去重(hash) -> 类型识别(magic number) -> 落盘 -> 事务处理头像唯一 -> 返回记录
+func UploadImage(c *gin.Context, userID uint64, username, postID, isAvatar string, file *multipart.FileHeader) (*models.Image, error) {
 	maxSize := config.Config.GetInt64("image.max_size")
 	if maxSize <= 0 {
 		maxSize = 2 * 1024 * 1024 // 默认 2MB
@@ -32,42 +37,33 @@ func UploadImage(c *gin.Context, userID uint64, username string, postID string, 
 		return nil, apiException.ImageSizeExceeded
 	}
 
-	// 读取文件内容并计算哈希
+	// 计算哈希
 	fileContent, err := file.Open()
 	if err != nil {
 		return nil, err
 	}
 	defer fileContent.Close()
 
-	// 计算文件哈希
+
 	hasher := sha256.New()
 	if _, err := io.Copy(hasher, fileContent); err != nil {
 		return nil, err
 	}
 	fileHash := hex.EncodeToString(hasher.Sum(nil))
 
-	// helper: normalize path to use forward slashes for URLs
-	normalizeForURL := func(p string) string {
-		s := filepath.ToSlash(p)
-		s = strings.TrimPrefix(s, "./")
-		s = strings.TrimPrefix(s, "/")
-		return s
-	}
 
-	// 检查是否已存在相同图片
 	var existingImage models.Image
 	if err := database.DB.Where("checksum = ?", fileHash).First(&existingImage).Error; err == nil {
-		// do not modify DB, but normalize the path in returned object
-		existingImage.FilePath = normalizeForURL(existingImage.FilePath)
+		existingImage.FilePath = toURLPath(existingImage.FilePath)
 		return &existingImage, nil
 	}
 
-	// 重置文件指针
+	// 重置指针
 	if _, err := fileContent.Seek(0, 0); err != nil {
 		return nil, err
 	}
 
-	// 验证文件内容类型（使用 mimetype，根据 magic number 判断）
+	// Magicnumber检测文件类型
 	buffer := make([]byte, 512)
 	n, err := fileContent.Read(buffer)
 	if err != nil {
@@ -78,26 +74,21 @@ func UploadImage(c *gin.Context, userID uint64, username string, postID string, 
 	if !strings.HasPrefix(mtype.String(), "image/") {
 		return nil, apiException.NotImage
 	}
-	// 使用检测到的扩展名作为文件后缀（确保与内容一致）
 	ext := strings.ToLower(mtype.Extension())
 
-	// 创建用户专属文件夹
 	userFolder := fmt.Sprintf("%d-%s", userID, username)
 	userFolderPath := filepath.Join("images", userFolder)
 	if err := os.MkdirAll(userFolderPath, os.ModePerm); err != nil {
 		return nil, err
 	}
 
-	// 生成唯一文件名（用检测到的扩展名）
 	fileName := fileHash + ext
 	dst := filepath.Join(userFolderPath, fileName)
-
-	// 保存图片到服务器
 	if err := c.SaveUploadedFile(file, dst); err != nil {
 		return nil, err
 	}
 
-	// 保存图片信息到数据库（支持 is_avatar）
+	// 解析 postID（可选）
 	var postIDUint *uint64
 	if postID != "" {
 		postIDParsed, err := strconv.ParseUint(postID, 10, 64)
@@ -106,12 +97,9 @@ func UploadImage(c *gin.Context, userID uint64, username string, postID string, 
 		}
 	}
 
-	// 解析 isAvatar 字符串
-	avatarFlag := false
+
 	isAvatarLower := strings.ToLower(strings.TrimSpace(isAvatar))
-	if isAvatarLower == "1" || isAvatarLower == "true" || isAvatarLower == "yes" {
-		avatarFlag = true
-	}
+	avatarFlag := isAvatarLower == "1" || isAvatarLower == "true" || isAvatarLower == "yes"
 
 	image := &models.Image{
 		UserID:    userID,
@@ -123,13 +111,12 @@ func UploadImage(c *gin.Context, userID uint64, username string, postID string, 
 		CreatedAt: time.Now(),
 	}
 
-	// 如果是头像上传，需要在事务中：把该用户其它图片的 IsAvatar 置 false，插入新记录，并更新 users.avatar_path
+	// 头像：事务内保证唯一
 	if avatarFlag {
 		tx := database.DB.Begin()
 		if tx.Error != nil {
 			return nil, tx.Error
 		}
-		// 先置空该用户其它图片的 is_avatar
 		if err := tx.Model(&models.Image{}).Where("user_id = ? AND is_avatar = ?", userID, true).Update("is_avatar", false).Error; err != nil {
 			tx.Rollback()
 			return nil, err
@@ -138,9 +125,7 @@ func UploadImage(c *gin.Context, userID uint64, username string, postID string, 
 			tx.Rollback()
 			return nil, err
 		}
-		// 更新 users.avatar_path
-		avatarPath := dst
-		if err := tx.Model(&models.User{}).Where("id = ?", userID).Update("avatar_path", avatarPath).Error; err != nil {
+		if err := tx.Model(&models.User{}).Where("id = ?", userID).Update("avatar_path", dst).Error; err != nil {
 			tx.Rollback()
 			return nil, err
 		}
@@ -153,9 +138,8 @@ func UploadImage(c *gin.Context, userID uint64, username string, postID string, 
 		}
 	}
 
-	// 生成 public url
-	// normalize returned image file path for frontend
-	image.FilePath = normalizeForURL(image.FilePath)
+	// 相对路径
+	image.FilePath = toURLPath(image.FilePath)
 	return image, nil
 }
 

@@ -150,12 +150,10 @@ func GetPostsByUserID(userID uint64, page, pageSize int) ([]PostWithLike, int64,
 
 // 获取自己发布的表白
 func GetMyPosts(userID uint64, page, pageSize int) ([]PostWithLike, int64, error) {
-	//总条数
 	var total int64
 	database.DB.Model(&models.Post{}).
 		Where("user_id = ?", userID).
 		Count(&total)
-	//拿帖子
 	var posts []models.Post
 	err := database.DB.
 		Preload("Images").
@@ -170,9 +168,9 @@ func GetMyPosts(userID uint64, page, pageSize int) ([]PostWithLike, int64, error
 	//点赞数 + 是否已赞（redis）
 	list := make([]PostWithLike, 0, len(posts))
 	for _, p := range posts {
-		likeCount := redis.GetPostLikeCount(p.ID, 0)    // 帖子点赞 reviewID=0
-		likedByMe := redis.IsUserLiked(p.ID, userID, 0) // 当前用户是否点赞
-		reviewsCount := redis.GetPostReviewCount(p.ID)  // 帖子评论数
+		likeCount := redis.GetPostLikeCount(p.ID, 0)    
+		likedByMe := redis.IsUserLiked(p.ID, userID, 0) 
+		reviewsCount := redis.GetPostReviewCount(p.ID)  
 
 		short := p.Content
 		isFull := false

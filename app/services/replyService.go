@@ -7,88 +7,71 @@ import (
 	"github.com/1917173927/WallOfLove/conf/redis"
 )
 
-// 创建回复
+// CreateReply 新增回复并增加对应评论的回复计数
 func CreateReply(reply *models.Reply) error {
 	redis.IncrReply(reply.ReviewID)
 	return database.DB.Create(reply).Error
 }
 
-func GetRepliesByReviewID(reviewID uint64, userID uint64, page int, pageSize int) ([]models.ReplyWithNickname, int64, error) {
+// GetRepliesByReviewID 获取评论的回复（过滤黑名单用户），附带用户昵称与头像
+func GetRepliesByReviewID(reviewID, userID uint64, page, pageSize int) ([]models.ReplyWithNickname, int64, error) {
 	sub, _ := utils.GetBlackListIDs(userID)
 	var total int64
-
-	countDB := database.DB.Model(&models.Reply{}).
-		Where("review_id = ?", reviewID)
+	countQ := database.DB.Model(&models.Reply{}).Where("review_id = ?", reviewID)
 	if len(sub) > 0 {
-		countDB = countDB.Where("user_id NOT IN (?)", sub)
+		countQ = countQ.Where("user_id NOT IN (?)", sub)
 	}
-	countDB.Count(&total)
+	countQ.Count(&total)
 
-	// 获取原始回复列表
 	var replies []models.Reply
-	q := database.DB.
-		Where("review_id = ?", reviewID)
+	q := database.DB.Where("review_id = ?", reviewID)
 	if len(sub) > 0 {
 		q = q.Where("user_id NOT IN (?)", sub)
 	}
-	err := q.
-		Order("created_at desc").
-		Scopes(utils.Paginate(page, pageSize)).
-		Find(&replies).Error
-	if err != nil {
+	if err := q.Order("created_at desc").Scopes(utils.Paginate(page, pageSize)).Find(&replies).Error; err != nil {
 		return nil, 0, err
 	}
 
-	// 收集所有回复的用户ID
-	userIDs := make([]uint64, 0, len(replies))
-	for _, r := range replies {
-		userIDs = append(userIDs, r.UserID)
-	}
-
-	// 批量获取用户信息
+	// 批量抓取用户昵称与头像
 	userInfos := make(map[uint64]struct {
 		Nickname   string
 		AvatarPath string
 	})
-	for _, id := range userIDs {
-		user, err := GetUserDataByID(id)
-		if err == nil && user != nil {
-			userInfos[id] = struct {
+	for _, r := range replies {
+		if _, ok := userInfos[r.UserID]; ok { // 已缓存
+			continue
+		}
+		if u, err := GetUserDataByID(r.UserID); err == nil && u != nil {
+			userInfos[r.UserID] = struct {
 				Nickname   string
 				AvatarPath string
-			}{
-				Nickname:   user.Nickname,
-				AvatarPath: user.AvatarPath,
-			}
+			}{Nickname: u.Nickname, AvatarPath: u.AvatarPath}
 		}
 	}
 
-	// 创建返回结果
 	list := make([]models.ReplyWithNickname, 0, len(replies))
 	for _, r := range replies {
+		info := userInfos[r.UserID]
 		list = append(list, models.ReplyWithNickname{
 			Reply:      r,
-			Nickname:   userInfos[r.UserID].Nickname,
-			AvatarPath: userInfos[r.UserID].AvatarPath,
+			Nickname:   info.Nickname,
+			AvatarPath: info.AvatarPath,
 		})
 	}
-
 	return list, total, nil
 }
 
-// 删除回复
+// DeleteReply 删除回复并减少计数
 func DeleteReply(replyID uint64) error {
 	redis.DecrReply(replyID)
 	return database.DB.Delete(&models.Reply{}, replyID).Error
 }
 
+// GetReplyByReplyID 根据ID获取单条回复
 func GetReplyByReplyID(replyID uint64) (*models.Reply, error) {
 	var reply models.Reply
-	result := database.DB.
-		Where("id = ?", replyID).
-		First(&reply)
-	if result.Error != nil {
-		return nil, result.Error
+	if err := database.DB.Where("id = ?", replyID).First(&reply).Error; err != nil {
+		return nil, err
 	}
 	return &reply, nil
 }

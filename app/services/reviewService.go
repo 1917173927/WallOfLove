@@ -10,13 +10,11 @@ import (
 	"gorm.io/gorm"
 )
 
-// 创建评论
 func CreateReview(review *models.Review) error {
 	redis.IncrReview(review.PostID)
 	return database.DB.Create(review).Error
 }
 
-// 删除评论
 func DeleteReview(reviewID uint64) error {
 	redis.DecrReview(reviewID)
 	return database.DB.Delete(&models.Review{}, "id = ?", reviewID).Error
@@ -50,7 +48,6 @@ type ReviewWithLike struct {
 func GetVisibleReviews(postID uint64, userID uint64, page, pageSize int) ([]ReviewWithLike, int64, error) {
 	sub, _ := utils.GetBlackListIDs(userID)
 
-	//总条数
 	var total int64
 	countDB := database.DB.Model(&models.Review{}).
 		Where("post_id = ?", postID)
@@ -59,11 +56,10 @@ func GetVisibleReviews(postID uint64, userID uint64, page, pageSize int) ([]Revi
 	}
 	countDB.Count(&total)
 
-	//拿评论和回复
 	var reviews []models.Review
 	base := database.DB.
 		Preload("Replies", func(db *gorm.DB) *gorm.DB {
-			return db.Order("created_at DESC").Limit(2) // 只拿 2 条回复
+			return db.Order("created_at DESC").Limit(2) 
 		}).
 		Where("post_id = ?", postID)
 	if len(sub) > 0 {
@@ -77,13 +73,11 @@ func GetVisibleReviews(postID uint64, userID uint64, page, pageSize int) ([]Revi
 		return nil, 0, err
 	}
 
-	// 收集所有评论的用户ID
 	userIDs := make([]uint64, 0, len(reviews))
 	for _, r := range reviews {
 		userIDs = append(userIDs, r.UserID)
 	}
 
-	// 批量获取用户信息
 	userInfos := make(map[uint64]struct {
 		Nickname   string
 		AvatarPath string
@@ -107,10 +101,9 @@ func GetVisibleReviews(postID uint64, userID uint64, page, pageSize int) ([]Revi
 		likedByMe := redis.IsUserLiked(postID, userID, r.ID) // 当前用户是否点赞这条评论
 		repliesCount := redis.GetReviewReplyCount(r.ID)      //评论回复数
 
-		// 过滤被拉黑回复
 		filterReplies(&r, sub)
 
-		// 处理回复数据，添加昵称
+
 		replyList := make([]models.ReplyWithNickname, 0, len(r.Replies))
 		for _, reply := range r.Replies {
 			replyList = append(replyList, models.ReplyWithNickname{
@@ -138,7 +131,7 @@ func filterReplies(review *models.Review, blackList []uint64) {
 	if len(review.Replies) == 0 || len(blackList) == 0 {
 		return
 	}
-	// 把不在黑名单里的回复留下
+
 	filtered := make([]models.Reply, 0, len(review.Replies))
 	for _, r2 := range review.Replies {
 		if !slices.Contains(blackList, r2.UserID) {

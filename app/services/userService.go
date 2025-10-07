@@ -88,7 +88,7 @@ func GetBlackedUsers(userID uint64) ([]BlackedUser, error) {
 	}
 	var list []BlackedUser
 	err = database.DB.
-		Table("Users").
+		Table("users").
 		Select("id as user_id, username, nickname").
 		Where("id IN ?", ids).
 		Scan(&list).Error
